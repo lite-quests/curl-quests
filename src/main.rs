@@ -82,7 +82,7 @@ impl App {
             0 => self.render_levels(frame, area),
             1 => {
                 let block = Block::bordered()
-                    .title(" Instructions ")
+                    .title(" Instructions - Enter to select")
                     .border_style(Style::new().fg(Color::Cyan));
                 frame.render_widget(
                     Paragraph::new(
@@ -91,7 +91,7 @@ impl App {
                          2. Run the curl command shown\n\
                          3. Follow the instructions in the response\n\n\
                          Navigation:\n\
-                           Up / Down   Move selection\n\
+                           Arrows      Move selection\n\
                            Enter       Select / confirm\n\
                            Esc         Go back\n\
                            q           Quit\n\n\
@@ -119,7 +119,7 @@ impl App {
         if let Some(n) = self.selected_quest {
             // Quest detail
             let block = Block::bordered()
-                .title(format!(" Quest {n} of 24 "))
+                .title(format!(" Quest {n} of 24 -  Esc to exit "))
                 .border_style(Style::new().fg(Color::Cyan));
             frame.render_widget(
                 Paragraph::new(format!(
@@ -134,49 +134,101 @@ impl App {
                 area,
             );
         } else {
-            // Quest list
-            let quest_items: Vec<ListItem> = (1..=24)
-                .map(|n| ListItem::new(format!("  Quest {n}")))
-                .collect();
-
-            let mut list_state = ListState::default();
-            if self.content_focused {
-                list_state.select(Some(self.quest_index));
-            }
-
+            // Quest grid
             let title = if self.content_focused {
                 " Levels - Esc to exit "
             } else {
                 " Levels - Enter to select "
             };
 
-            let list = List::new(quest_items)
-                .block(
-                    Block::bordered()
-                        .title(title)
-                        .border_style(Style::new().fg(Color::Cyan)),
-                )
-                .highlight_style(Style::new().bg(Color::Blue).fg(Color::White).bold());
+            let outer_block = Block::bordered()
+                .title(title)
+                .border_style(Style::new().fg(Color::Cyan));
+            let inner_area = outer_block.inner(area);
+            frame.render_widget(outer_block, area);
 
-            frame.render_stateful_widget(list, area, &mut list_state);
+            let box_width = 6;
+            let box_height = 3;
+            let spacing_x = 2;
+            let spacing_y = 1;
+
+            let cols =
+                ((inner_area.width as usize + spacing_x) / (box_width as usize + spacing_x)).max(1);
+            let total_rows = (24 + cols - 1) / cols;
+            let visible_rows = ((inner_area.height as usize + spacing_y)
+                / (box_height as usize + spacing_y))
+                .max(1);
+
+            let selected_row = self.quest_index / cols;
+
+            let mut start_row = selected_row.saturating_sub(visible_rows / 2);
+            if start_row + visible_rows > total_rows {
+                start_row = total_rows.saturating_sub(visible_rows);
+            }
+
+            for i in 0..24 {
+                let row = i / cols;
+                let col = i % cols;
+
+                if row < start_row || row >= start_row + visible_rows {
+                    continue;
+                }
+
+                let visual_row = row - start_row;
+
+                let x = inner_area.x + (col * (box_width as usize + spacing_x)) as u16;
+                let y = inner_area.y + (visual_row * (box_height as usize + spacing_y)) as u16;
+
+                let rect = Rect::new(x, y, box_width as u16, box_height as u16);
+                let rect = inner_area.intersection(rect);
+
+                if rect.width > 0 && rect.height > 0 {
+                    let is_selected = self.content_focused && self.quest_index == i;
+                    let block = Block::bordered();
+
+                    let (bg, fg, border_color) = if is_selected {
+                        (Color::Blue, Color::White, Color::Blue)
+                    } else {
+                        (Color::Reset, Color::White, Color::DarkGray)
+                    };
+
+                    let cell_block = block
+                        .border_style(Style::new().fg(border_color))
+                        .style(Style::new().bg(bg).fg(fg));
+
+                    let paragraph = Paragraph::new(format!("{}", i + 1))
+                        .block(cell_block)
+                        .alignment(ratatui::layout::Alignment::Center);
+
+                    frame.render_widget(paragraph, rect);
+                }
+            }
         }
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
-                self.handle_key(key);
+                let cols = if let Ok(size) = crossterm::terminal::size() {
+                    let area_width = size.0.saturating_sub(22).saturating_sub(2);
+                    ((area_width + 2) / 16).max(1) as usize
+                } else {
+                    4
+                };
+                self.handle_key(key, cols);
             }
         }
         Ok(())
     }
 
-    fn handle_key(&mut self, key: KeyEvent) {
+    fn handle_key(&mut self, key: KeyEvent, cols: usize) {
         match key.code {
             KeyCode::Char('q') => self.exit = true,
             KeyCode::Esc => self.handle_esc(),
-            KeyCode::Up => self.handle_up(),
-            KeyCode::Down => self.handle_down(),
+            KeyCode::Up => self.handle_up(cols),
+            KeyCode::Down => self.handle_down(cols),
+            KeyCode::Left => self.handle_left(),
+            KeyCode::Right => self.handle_right(),
             KeyCode::Enter => self.handle_enter(),
             _ => {}
         }
@@ -188,13 +240,15 @@ impl App {
             self.content_focused = true;
         } else if self.content_focused {
             self.content_focused = false;
+        } else {
+            self.exit = true;
         }
     }
 
-    fn handle_up(&mut self) {
+    fn handle_up(&mut self, cols: usize) {
         if self.content_focused {
-            if self.quest_index > 0 {
-                self.quest_index -= 1;
+            if self.quest_index >= cols {
+                self.quest_index -= cols;
             }
         } else if self.reset_focused {
             self.reset_focused = false;
@@ -203,16 +257,35 @@ impl App {
         }
     }
 
-    fn handle_down(&mut self) {
+    fn handle_down(&mut self, cols: usize) {
         if self.content_focused {
-            if self.quest_index < 23 {
-                self.quest_index += 1;
+            let next = self.quest_index + cols;
+            if next < 24 {
+                self.quest_index = next;
+            } else if self.quest_index / cols < 23 / cols {
+                self.quest_index = 23;
             }
         } else if !self.reset_focused {
             if self.sidebar_index < SIDEBAR.len() - 1 {
                 self.set_sidebar(self.sidebar_index + 1);
             } else {
                 self.reset_focused = true;
+            }
+        }
+    }
+
+    fn handle_left(&mut self) {
+        if self.content_focused {
+            if self.quest_index > 0 {
+                self.quest_index -= 1;
+            }
+        }
+    }
+
+    fn handle_right(&mut self) {
+        if self.content_focused {
+            if self.quest_index < 23 {
+                self.quest_index += 1;
             }
         }
     }
