@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::io;
 use std::process::{Child, Stdio};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::DefaultTerminal;
 
 use crate::db::{self, Db};
@@ -74,6 +74,12 @@ pub struct QuestViewState {
     /// Terminal command input.
     pub input: String,
     pub cursor: usize,
+    /// Current scroll offset for terminal view.
+    pub scroll_offset: usize,
+    /// Currently viewing history index.
+    pub history_index: Option<usize>,
+    /// The input typed before starting to navigate history.
+    pub pending_input: String,
     /// Answer text input (for quests with submit_prompt).
     pub answer: String,
     pub answer_cursor: usize,
@@ -90,6 +96,9 @@ impl QuestViewState {
             history: Vec::new(),
             input: String::new(),
             cursor: 0,
+            scroll_offset: 0,
+            history_index: None,
+            pending_input: String::new(),
             answer: String::new(),
             answer_cursor: 0,
             has_answer_input,
@@ -211,20 +220,48 @@ impl App {
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        let _ = crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture);
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
             self.handle_events()?;
+            
+            // Drain any pending events before redrawing to prevent lag on rapid input (like mouse scrolling)
+            while crossterm::event::poll(std::time::Duration::from_millis(0))? {
+                self.handle_events()?;
+                if self.exit { break; }
+            }
         }
+        let _ = crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture);
         Ok(())
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                self.handle_key(key);
+        match event::read()? {
+            Event::Key(key) => {
+                if key.kind == KeyEventKind::Press {
+                    self.handle_key(key);
+                }
             }
+            Event::Mouse(mouse) => {
+                self.handle_mouse(mouse);
+            }
+            _ => {}
         }
         Ok(())
+    }
+
+    fn handle_mouse(&mut self, mouse: MouseEvent) {
+        if self.quest_view.is_some() {
+            match mouse.kind {
+                MouseEventKind::ScrollUp => {
+                    self.apply_quest_action(QuestAction::ScrollUp);
+                }
+                MouseEventKind::ScrollDown => {
+                    self.apply_quest_action(QuestAction::ScrollDown);
+                }
+                _ => {}
+            }
+        }
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
@@ -354,25 +391,80 @@ impl App {
             QuestAction::Insert(c) => {
                 let qv = self.quest_view.as_mut().unwrap();
                 qv.input.insert(qv.cursor, c);
-                qv.cursor += 1;
+                qv.cursor += c.len_utf8();
+                qv.scroll_offset = 0;
             }
             QuestAction::Backspace => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.cursor > 0 {
-                    qv.cursor -= 1;
-                    qv.input.remove(qv.cursor);
+                    if let Some(c) = qv.input[..qv.cursor].chars().next_back() {
+                        qv.cursor -= c.len_utf8();
+                        qv.input.remove(qv.cursor);
+                    }
                 }
             }
             QuestAction::CursorLeft => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.cursor > 0 {
-                    qv.cursor -= 1;
+                    if let Some(c) = qv.input[..qv.cursor].chars().next_back() {
+                        qv.cursor -= c.len_utf8();
+                    }
                 }
             }
             QuestAction::CursorRight => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.cursor < qv.input.len() {
-                    qv.cursor += 1;
+                    if let Some(c) = qv.input[qv.cursor..].chars().next() {
+                        qv.cursor += c.len_utf8();
+                    }
+                }
+            }
+            QuestAction::PageUp => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.scroll_offset = qv.scroll_offset.saturating_add(15);
+            }
+            QuestAction::PageDown => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.scroll_offset = qv.scroll_offset.saturating_sub(15);
+            }
+            QuestAction::ScrollUp => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.scroll_offset = qv.scroll_offset.saturating_add(3);
+            }
+            QuestAction::ScrollDown => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
+            }
+            QuestAction::HistoryUp => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if qv.history.is_empty() { return; }
+                
+                if qv.history_index.is_none() {
+                    qv.pending_input = qv.input.clone();
+                    qv.history_index = Some(qv.history.len().saturating_sub(1));
+                } else {
+                    let idx = qv.history_index.unwrap();
+                    if idx > 0 {
+                        qv.history_index = Some(idx - 1);
+                    }
+                }
+                
+                if let Some(idx) = qv.history_index {
+                    qv.input = qv.history[idx].command.clone();
+                    qv.cursor = qv.input.len();
+                }
+            }
+            QuestAction::HistoryDown => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if let Some(idx) = qv.history_index {
+                    if idx + 1 < qv.history.len() {
+                        qv.history_index = Some(idx + 1);
+                        qv.input = qv.history[idx + 1].command.clone();
+                    } else {
+                        qv.history_index = None;
+                        qv.input = qv.pending_input.clone();
+                    }
+                    qv.cursor = qv.input.len();
                 }
             }
 
@@ -402,7 +494,17 @@ impl App {
                 }
             }
 
-            QuestAction::Run => self.run_command(),
+            QuestAction::Enter => {
+                let qv = self.quest_view.as_mut().unwrap();
+                let is_multiline = qv.input.trim_end().ends_with('\\');
+                if is_multiline {
+                    qv.input.insert(qv.cursor, '\n');
+                    qv.cursor += 1;
+                    qv.scroll_offset = 0;
+                } else {
+                    self.run_command();
+                }
+            }
             QuestAction::Submit => self.submit_quest(),
 
             QuestAction::FocusTerminal => {
@@ -463,6 +565,9 @@ impl App {
         qv.history.push(TerminalEntry { command: cmd, output });
         qv.input.clear();
         qv.cursor = 0;
+        qv.scroll_offset = 0;
+        qv.history_index = None;
+        qv.pending_input.clear();
         qv.test_result = None;
     }
 
@@ -517,11 +622,17 @@ enum QuestAction {
     Backspace,
     CursorLeft,
     CursorRight,
+    PageUp,
+    PageDown,
+    ScrollUp,
+    ScrollDown,
+    HistoryUp,
+    HistoryDown,
     AnswerInsert(char),
     AnswerBackspace,
     AnswerCursorLeft,
     AnswerCursorRight,
-    Run,
+    Enter,
     Submit,
     FocusTerminal,
     FocusNext,
@@ -539,7 +650,23 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::Backspace => QuestAction::Backspace,
                 KeyCode::Left => QuestAction::CursorLeft,
                 KeyCode::Right => QuestAction::CursorRight,
-                KeyCode::Enter => QuestAction::Run,
+                KeyCode::PageUp => QuestAction::PageUp,
+                KeyCode::PageDown => QuestAction::PageDown,
+                KeyCode::Up => {
+                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                        QuestAction::ScrollUp
+                    } else {
+                        QuestAction::HistoryUp
+                    }
+                }
+                KeyCode::Down => {
+                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                        QuestAction::ScrollDown
+                    } else {
+                        QuestAction::HistoryDown
+                    }
+                }
+                KeyCode::Enter => QuestAction::Enter,
                 KeyCode::Tab => QuestAction::FocusNext,
                 _ => QuestAction::None,
             },

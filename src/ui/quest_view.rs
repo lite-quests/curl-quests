@@ -90,11 +90,16 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let mut lines: Vec<Line> = Vec::new();
 
     for entry in &qv.history {
-        // Command line
-        lines.push(Line::from(vec![
-            Span::styled("$ ", Style::new().fg(Color::Green).bold()),
-            Span::styled(entry.command.clone(), Style::new().fg(Color::White)),
-        ]));
+        // Command line(s)
+        let mut first = true;
+        for line in entry.command.lines() {
+            let prompt = if first { "$ " } else { "> " };
+            first = false;
+            lines.push(Line::from(vec![
+                Span::styled(prompt, Style::new().fg(Color::Green).bold()),
+                Span::styled(line.to_string(), Style::new().fg(Color::White)),
+            ]));
+        }
         // Output lines
         for output_line in entry.output.lines() {
             lines.push(Line::from(Span::styled(
@@ -107,22 +112,37 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     }
 
     // Live input prompt at the bottom
-    let before = &qv.input[..qv.cursor];
-    let after = &qv.input[qv.cursor..];
-    lines.push(Line::from(vec![
-        Span::styled("$ ", Style::new().fg(Color::Green).bold()),
-        Span::raw(before.to_string()),
-        Span::styled(
+    let mut spans = vec![Span::styled("$ ", Style::new().fg(Color::Green).bold())];
+    
+    for (i, c) in qv.input.char_indices() {
+        let is_cursor = i == qv.cursor && focused;
+        let style = if is_cursor { Style::new().fg(Color::Black).bg(Color::White) } else { Style::new() };
+        
+        if c == '\n' {
+            if is_cursor {
+                spans.push(Span::styled("█", Style::new().fg(Color::Black).bg(Color::White)));
+            }
+            lines.push(Line::from(spans));
+            spans = vec![Span::styled("> ", Style::new().fg(Color::Green).bold())];
+        } else {
+            spans.push(Span::styled(c.to_string(), style));
+        }
+    }
+    
+    if qv.cursor == qv.input.len() {
+        spans.push(Span::styled(
             if focused { "█" } else { "" },
-            Style::new().fg(Color::Black).bg(Color::White),
-        ),
-        Span::raw(after.to_string()),
-    ]));
+            Style::new().bg(Color::White).fg(Color::Black)
+        ));
+    }
+    lines.push(Line::from(spans));
 
-    // Scroll so the bottom (live input) is always visible.
+    // Scroll so the bottom (live input) is always visible, accounting for user scroll_offset.
     let total_lines = lines.len() as u16;
     let visible = inner.height;
-    let scroll = total_lines.saturating_sub(visible);
+    let max_scroll = total_lines.saturating_sub(visible);
+    let effective_scroll_offset = qv.scroll_offset.min(max_scroll as usize) as u16;
+    let scroll = max_scroll.saturating_sub(effective_scroll_offset);
 
     frame.render_widget(
         Paragraph::new(lines).block(block).scroll((scroll, 0)),
