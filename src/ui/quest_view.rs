@@ -7,20 +7,21 @@ use ratatui::{
 };
 
 use crate::app::{App, QuestFocus, QuestViewState, TestResult};
-use crate::quests;
 
 pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
-    let quest = match quests::get(qv.quest_id) {
+    let quest = match app.get_quest(qv.quest_id) {
         Some(q) => q,
         None => return,
     };
 
-    let done_badge = if app.completed.contains(&qv.quest_id) {
-        " ✓"
-    } else {
-        ""
-    };
-    let title = format!(" Quest {}/{}: {}{} ", qv.quest_id, 24, quest.title, done_badge);
+    let done_badge = if app.completed.contains(&qv.quest_id) { " ✓" } else { "" };
+    let title = format!(
+        " Quest {}/{}: {}{} ",
+        qv.quest_id,
+        app.quest_count(),
+        quest.title,
+        done_badge
+    );
 
     let outer = Block::bordered()
         .title(title.as_str())
@@ -28,28 +29,42 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
-    // Split inner area: instructions | input | output | result | buttons
-    let chunks = Layout::vertical([
-        Constraint::Percentage(30), // instructions
-        Constraint::Length(3),      // command input
-        Constraint::Fill(1),        // output
-        Constraint::Length(3),      // test result
-        Constraint::Length(3),      // buttons
-    ])
-    .split(inner);
+    // Build layout dynamically — answer input row only when the quest needs it.
+    let mut constraints = vec![
+        Constraint::Percentage(30), // instructions + hint
+        Constraint::Fill(1),        // terminal (history + live input)
+    ];
+    if qv.has_answer_input {
+        constraints.push(Constraint::Length(3)); // answer input
+    }
+    constraints.push(Constraint::Length(3)); // submit result
+    constraints.push(Constraint::Length(3)); // buttons
 
-    render_instructions(frame, quest.instructions, quest.hint, chunks[0]);
-    render_input(frame, qv, chunks[1]);
-    render_output(frame, qv, chunks[2]);
-    render_result(frame, qv, chunks[3]);
-    render_buttons(frame, qv, chunks[4]);
+    let chunks = Layout::vertical(constraints).split(inner);
+
+    let mut idx = 0;
+    render_instructions(frame, &quest.instructions, &quest.hint, chunks[idx]);
+    idx += 1;
+    render_terminal(frame, qv, chunks[idx]);
+    idx += 1;
+    if qv.has_answer_input {
+        let prompt = quest.submit_prompt.as_deref().unwrap_or("Your answer");
+        render_answer_input(frame, qv, prompt, chunks[idx]);
+        idx += 1;
+    }
+    render_result(frame, qv, chunks[idx]);
+    idx += 1;
+    render_buttons(frame, qv, chunks[idx]);
 }
+
+// ---------------------------------------------------------------------------
+// Sections
+// ---------------------------------------------------------------------------
 
 fn render_instructions(frame: &mut Frame, instructions: &str, hint: &str, area: Rect) {
     let block = Block::bordered()
         .title(" Instructions ")
         .border_style(Style::new().fg(Color::DarkGray));
-
     let text = format!("{}\n\nHint: {}", instructions, hint);
     frame.render_widget(
         Paragraph::new(text).block(block).wrap(Wrap { trim: false }),
@@ -57,54 +72,104 @@ fn render_instructions(frame: &mut Frame, instructions: &str, hint: &str, area: 
     );
 }
 
-fn render_input(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
-    let focused = qv.focus == QuestFocus::Input;
+fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
+    let focused = qv.focus == QuestFocus::Terminal;
     let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let title = if focused {
+        " Terminal (Enter to run  Tab to navigate) "
+    } else {
+        " Terminal "
+    };
 
     let block = Block::bordered()
-        .title(" Command (Enter to run) ")
+        .title(title)
         .border_style(Style::new().fg(border_color));
+    let inner = block.inner(area);
 
-    // Show a block cursor inside the input text
+    // Build lines: history entries, then the live input prompt.
+    let mut lines: Vec<Line> = Vec::new();
+
+    for entry in &qv.history {
+        // Command line
+        lines.push(Line::from(vec![
+            Span::styled("$ ", Style::new().fg(Color::Green).bold()),
+            Span::styled(entry.command.clone(), Style::new().fg(Color::White)),
+        ]));
+        // Output lines
+        for output_line in entry.output.lines() {
+            lines.push(Line::from(Span::styled(
+                format!("  {}", output_line),
+                Style::new().fg(Color::Gray),
+            )));
+        }
+        // Blank separator
+        lines.push(Line::default());
+    }
+
+    // Live input prompt at the bottom
     let before = &qv.input[..qv.cursor];
-    let at = if focused { "█" } else { "" };
     let after = &qv.input[qv.cursor..];
+    lines.push(Line::from(vec![
+        Span::styled("$ ", Style::new().fg(Color::Green).bold()),
+        Span::raw(before.to_string()),
+        Span::styled(
+            if focused { "█" } else { "" },
+            Style::new().fg(Color::Black).bg(Color::White),
+        ),
+        Span::raw(after.to_string()),
+    ]));
+
+    // Scroll so the bottom (live input) is always visible.
+    let total_lines = lines.len() as u16;
+    let visible = inner.height;
+    let scroll = total_lines.saturating_sub(visible);
 
     frame.render_widget(
-        Paragraph::new(format!("{}{}{}", before, at, after)).block(block),
+        Paragraph::new(lines).block(block).scroll((scroll, 0)),
         area,
     );
 }
 
-fn render_output(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
+fn render_answer_input(frame: &mut Frame, qv: &QuestViewState, prompt: &str, area: Rect) {
+    let focused = qv.focus == QuestFocus::Answer;
+    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let title = format!(" {} ", prompt);
+
     let block = Block::bordered()
-        .title(" Output ")
-        .border_style(Style::new().fg(Color::DarkGray));
+        .title(title)
+        .border_style(Style::new().fg(border_color));
 
-    let text = if qv.output.is_empty() {
-        "Run your command above to see output here...".to_string()
-    } else {
-        qv.output.clone()
-    };
+    let before = &qv.answer[..qv.answer_cursor];
+    let after = &qv.answer[qv.answer_cursor..];
+    let line = Line::from(vec![
+        Span::styled("> ", Style::new().fg(Color::Cyan).bold()),
+        Span::raw(before.to_string()),
+        Span::styled(
+            if focused { "█" } else { "" },
+            Style::new().fg(Color::Black).bg(Color::White),
+        ),
+        Span::raw(after.to_string()),
+    ]);
 
-    frame.render_widget(
-        Paragraph::new(text)
-            .block(block)
-            .wrap(Wrap { trim: false }),
-        area,
-    );
+    frame.render_widget(Paragraph::new(line).block(block), area);
 }
 
 fn render_result(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let (text, color) = match &qv.test_result {
         Some(TestResult::Pass) => ("  ✓  Quest complete! Well done.", Color::Green),
         Some(TestResult::Fail(msg)) => (msg.as_str(), Color::Red),
-        None => ("  Submit your output to check the answer.", Color::DarkGray),
+        None => (
+            "  Press Tab → [Submit] to verify your work.",
+            Color::DarkGray,
+        ),
     };
-
-    let block = Block::bordered().border_style(Style::new().fg(color));
+    let focused = qv.focus == QuestFocus::Submit;
+    let border_color = if focused { Color::Yellow } else { color };
+    let block = Block::bordered().border_style(Style::new().fg(border_color));
     frame.render_widget(
-        Paragraph::new(text).style(Style::new().fg(color).bold()).block(block),
+        Paragraph::new(text)
+            .style(Style::new().fg(color).bold())
+            .block(block),
         area,
     );
 }
@@ -113,19 +178,19 @@ fn render_buttons(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let sel = Style::new().bg(Color::Yellow).fg(Color::Black).bold();
     let normal = Style::new().fg(Color::White);
 
-    let run_s = if qv.focus == QuestFocus::Run { sel } else { normal };
     let sub_s = if qv.focus == QuestFocus::Submit { sel } else { normal };
     let back_s = if qv.focus == QuestFocus::Back { sel } else { normal };
 
     let line = Line::from(vec![
         Span::raw("  "),
-        Span::styled("[ Run ]", run_s),
-        Span::raw("   "),
         Span::styled("[ Submit ]", sub_s),
         Span::raw("   "),
         Span::styled("[ Back ]", back_s),
         Span::raw("   "),
-        Span::styled("Tab/←→ switch  Esc back", Style::new().fg(Color::DarkGray)),
+        Span::styled(
+            "Tab/←→ switch  Esc back",
+            Style::new().fg(Color::DarkGray),
+        ),
     ]);
 
     let block = Block::bordered().border_style(Style::new().fg(Color::DarkGray));

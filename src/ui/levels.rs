@@ -20,13 +20,18 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
+    let total = app.quest_count();
+    if total == 0 {
+        return;
+    }
+
     let box_w: u16 = 10;
     let box_h: u16 = 3;
     let gap_x: u16 = 1;
     let gap_y: u16 = 1;
 
     let cols = ((inner.width + gap_x) / (box_w + gap_x)).max(1) as usize;
-    let total_rows = (24 + cols - 1) / cols;
+    let total_rows = (total + cols - 1) / cols;
     let vis_rows = ((inner.height + gap_y) / (box_h + gap_y)).max(1) as usize;
 
     let sel_row = app.quest_list_index / cols;
@@ -35,7 +40,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         start_row = total_rows.saturating_sub(vis_rows);
     }
 
-    for i in 0..24usize {
+    for i in 0..total {
         let row = i / cols;
         let col = i % cols;
 

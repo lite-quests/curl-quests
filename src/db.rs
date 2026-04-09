@@ -1,5 +1,6 @@
 use rusqlite::{params, Connection, Result};
 use std::collections::HashSet;
+use std::path::PathBuf;
 
 pub struct Db {
     conn: Connection,
@@ -39,4 +40,22 @@ impl Db {
         self.conn.execute("DELETE FROM completions", [])?;
         Ok(())
     }
+}
+
+/// Returns the path to the quest-specific database.
+pub fn quest_db_path() -> PathBuf {
+    PathBuf::from("data/quest.db")
+}
+
+/// Wipe and re-seed the quest database with the given SQL statements.
+pub fn setup_quest_db(seed_sql: &[String]) -> std::result::Result<(), String> {
+    let path = quest_db_path();
+    let _ = std::fs::remove_file(&path);
+    std::fs::create_dir_all("data").ok();
+    let conn = Connection::open(&path).map_err(|e| format!("Failed to create quest DB: {e}"))?;
+    for sql in seed_sql {
+        conn.execute_batch(sql)
+            .map_err(|e| format!("Seed SQL failed: {e}"))?;
+    }
+    Ok(())
 }

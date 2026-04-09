@@ -1,10 +1,11 @@
 use std::collections::HashSet;
 use std::io;
+use std::process::{Child, Stdio};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::DefaultTerminal;
 
-use crate::db::Db;
+use crate::db::{self, Db};
 use crate::quests;
 
 pub const SIDEBAR_ITEMS: [&str; 3] = ["  Levels", "  Instructions", "  Exit"];
@@ -15,24 +16,38 @@ pub const SIDEBAR_ITEMS: [&str; 3] = ["  Levels", "  Instructions", "  Exit"];
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum QuestFocus {
-    Input,
-    Run,
+    Terminal,
+    Answer,
     Submit,
     Back,
 }
 
 impl QuestFocus {
-    pub fn next(&self) -> Self {
+    pub fn next(&self, has_answer: bool) -> Self {
         match self {
-            Self::Input | Self::Run => Self::Submit,
+            Self::Terminal => {
+                if has_answer {
+                    Self::Answer
+                } else {
+                    Self::Submit
+                }
+            }
+            Self::Answer => Self::Submit,
             Self::Submit => Self::Back,
-            Self::Back => Self::Run,
+            Self::Back => Self::Terminal,
         }
     }
-    pub fn prev(&self) -> Self {
+    pub fn prev(&self, has_answer: bool) -> Self {
         match self {
-            Self::Input | Self::Submit => Self::Run,
-            Self::Run => Self::Back,
+            Self::Terminal => Self::Back,
+            Self::Answer => Self::Terminal,
+            Self::Submit => {
+                if has_answer {
+                    Self::Answer
+                } else {
+                    Self::Terminal
+                }
+            }
             Self::Back => Self::Submit,
         }
     }
@@ -44,25 +59,42 @@ pub enum TestResult {
     Fail(String),
 }
 
+/// One entry in the terminal history: the command the user ran and its output.
+#[derive(Debug, Clone)]
+pub struct TerminalEntry {
+    pub command: String,
+    pub output: String,
+}
+
 #[derive(Debug)]
 pub struct QuestViewState {
     pub quest_id: usize,
+    /// History of (command, output) pairs — grows with each Run.
+    pub history: Vec<TerminalEntry>,
+    /// Terminal command input.
     pub input: String,
     pub cursor: usize,
-    pub output: String,
+    /// Answer text input (for quests with submit_prompt).
+    pub answer: String,
+    pub answer_cursor: usize,
+    /// Whether this quest has an answer input field.
+    pub has_answer_input: bool,
     pub test_result: Option<TestResult>,
     pub focus: QuestFocus,
 }
 
 impl QuestViewState {
-    pub fn new(quest_id: usize) -> Self {
+    pub fn new(quest_id: usize, has_answer_input: bool) -> Self {
         Self {
             quest_id,
+            history: Vec::new(),
             input: String::new(),
             cursor: 0,
-            output: String::new(),
+            answer: String::new(),
+            answer_cursor: 0,
+            has_answer_input,
             test_result: None,
-            focus: QuestFocus::Input,
+            focus: QuestFocus::Terminal,
         }
     }
 }
@@ -80,13 +112,22 @@ pub struct App {
     pub quest_view: Option<QuestViewState>,
     pub db: Db,
     pub completed: HashSet<usize>,
+    pub quests: Vec<quests::Quest>,
+    pub server_process: Option<Child>,
     pub exit: bool,
+}
+
+impl Drop for App {
+    fn drop(&mut self) {
+        self.stop_server();
+    }
 }
 
 impl App {
     pub fn new() -> rusqlite::Result<Self> {
         let db = Db::open()?;
         let completed = db.completed_quests();
+        let quests = quests::load_quests(std::path::Path::new("quests"));
         Ok(Self {
             sidebar_index: 0,
             reset_focused: false,
@@ -96,8 +137,71 @@ impl App {
             quest_view: None,
             db,
             completed,
+            quests,
+            server_process: None,
             exit: false,
         })
+    }
+
+    pub fn quest_count(&self) -> usize {
+        self.quests.len()
+    }
+
+    pub fn get_quest(&self, id: usize) -> Option<&quests::Quest> {
+        self.quests.iter().find(|q| q.id == id)
+    }
+
+    /// Run the full setup phase for a quest: seed DB, start server, create view.
+    fn start_quest(&mut self, quest_id: usize) {
+        let quest = match self.quests.iter().find(|q| q.id == quest_id) {
+            Some(q) => q,
+            None => return,
+        };
+
+        // Setup phase: wipe and seed the quest database.
+        if let Some(setup) = &quest.setup {
+            let _ = db::setup_quest_db(&setup.seed);
+        }
+
+        let has_answer = quest.submit_prompt.is_some();
+
+        // Start the quest server (passes QUEST_DB env var).
+        self.start_quest_server(quest_id);
+
+        // Create the view state.
+        self.quest_view = Some(QuestViewState::new(quest_id, has_answer));
+    }
+
+    fn start_quest_server(&mut self, quest_id: usize) {
+        self.stop_server();
+        let quest = match self.quests.iter().find(|q| q.id == quest_id) {
+            Some(q) => q,
+            None => return,
+        };
+        let script = quest.folder_path.join("server.sh");
+        if script.exists() {
+            let quest_db = std::env::current_dir()
+                .unwrap_or_default()
+                .join(db::quest_db_path());
+            if let Ok(child) = std::process::Command::new("sh")
+                .arg(&script)
+                .env("QUEST_DB", &quest_db)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+            {
+                self.server_process = Some(child);
+                // Give the server a moment to bind the port.
+                std::thread::sleep(std::time::Duration::from_millis(300));
+            }
+        }
+    }
+
+    fn stop_server(&mut self) {
+        if let Some(mut child) = self.server_process.take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -176,6 +280,11 @@ impl App {
 
     fn handle_list_key(&mut self, key: KeyEvent) {
         let cols = self.quest_grid_cols();
+        let total = self.quest_count();
+        if total == 0 {
+            return;
+        }
+        let last = total - 1;
         match key.code {
             KeyCode::Char('q') => self.exit = true,
             KeyCode::Esc => self.content_focused = false,
@@ -186,10 +295,10 @@ impl App {
             }
             KeyCode::Down => {
                 let next = self.quest_list_index + cols;
-                if next < 24 {
+                if next < total {
                     self.quest_list_index = next;
-                } else if self.quest_list_index / cols < 23 / cols {
-                    self.quest_list_index = 23;
+                } else if self.quest_list_index / cols < last / cols {
+                    self.quest_list_index = last;
                 }
             }
             KeyCode::Left => {
@@ -198,12 +307,13 @@ impl App {
                 }
             }
             KeyCode::Right => {
-                if self.quest_list_index < 23 {
+                if self.quest_list_index < last {
                     self.quest_list_index += 1;
                 }
             }
             KeyCode::Enter => {
-                self.quest_view = Some(QuestViewState::new(self.quest_list_index + 1));
+                let id = self.quest_list_index + 1;
+                self.start_quest(id);
             }
             _ => {}
         }
@@ -223,7 +333,6 @@ impl App {
     // -----------------------------------------------------------------------
 
     fn handle_quest_key(&mut self, key: KeyEvent) {
-        // Resolve action without holding a borrow on self.quest_view
         let action = {
             let qv = self.quest_view.as_ref().unwrap();
             resolve_quest_action(qv, key)
@@ -234,18 +343,18 @@ impl App {
     fn apply_quest_action(&mut self, action: QuestAction) {
         match action {
             QuestAction::None => {}
+
+            // Terminal input editing
             QuestAction::Insert(c) => {
                 let qv = self.quest_view.as_mut().unwrap();
-                let pos = qv.cursor;
-                qv.input.insert(pos, c);
+                qv.input.insert(qv.cursor, c);
                 qv.cursor += 1;
             }
             QuestAction::Backspace => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.cursor > 0 {
                     qv.cursor -= 1;
-                    let pos = qv.cursor;
-                    qv.input.remove(pos);
+                    qv.input.remove(qv.cursor);
                 }
             }
             QuestAction::CursorLeft => {
@@ -260,20 +369,49 @@ impl App {
                     qv.cursor += 1;
                 }
             }
+
+            // Answer input editing
+            QuestAction::AnswerInsert(c) => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.answer.insert(qv.answer_cursor, c);
+                qv.answer_cursor += 1;
+            }
+            QuestAction::AnswerBackspace => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if qv.answer_cursor > 0 {
+                    qv.answer_cursor -= 1;
+                    qv.answer.remove(qv.answer_cursor);
+                }
+            }
+            QuestAction::AnswerCursorLeft => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if qv.answer_cursor > 0 {
+                    qv.answer_cursor -= 1;
+                }
+            }
+            QuestAction::AnswerCursorRight => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if qv.answer_cursor < qv.answer.len() {
+                    qv.answer_cursor += 1;
+                }
+            }
+
             QuestAction::Run => self.run_command(),
             QuestAction::Submit => self.submit_quest(),
-            QuestAction::FocusInput => {
-                self.quest_view.as_mut().unwrap().focus = QuestFocus::Input;
+
+            QuestAction::FocusTerminal => {
+                self.quest_view.as_mut().unwrap().focus = QuestFocus::Terminal;
             }
             QuestAction::FocusNext => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.focus = qv.focus.next();
+                qv.focus = qv.focus.next(qv.has_answer_input);
             }
             QuestAction::FocusPrev => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.focus = qv.focus.prev();
+                qv.focus = qv.focus.prev(qv.has_answer_input);
             }
             QuestAction::Back => {
+                self.stop_server();
                 self.quest_view = None;
                 self.content_focused = true;
             }
@@ -282,6 +420,7 @@ impl App {
                 if qv.test_result.is_some() {
                     qv.test_result = None;
                 } else {
+                    self.stop_server();
                     self.quest_view = None;
                     self.content_focused = true;
                 }
@@ -293,14 +432,13 @@ impl App {
         let qv = self.quest_view.as_mut().unwrap();
         let cmd = qv.input.trim().to_string();
         if cmd.is_empty() {
-            qv.output = "No command entered.".to_string();
             return;
         }
         let result = std::process::Command::new("sh")
             .arg("-c")
             .arg(&cmd)
             .output();
-        qv.output = match result {
+        let output = match result {
             Ok(out) => {
                 let stdout = String::from_utf8_lossy(&out.stdout).to_string();
                 let stderr = String::from_utf8_lossy(&out.stderr).to_string();
@@ -314,24 +452,39 @@ impl App {
             }
             Err(e) => format!("Failed to run command: {}", e),
         };
+        qv.history.push(TerminalEntry { command: cmd, output });
+        qv.input.clear();
+        qv.cursor = 0;
         qv.test_result = None;
-        qv.focus = QuestFocus::Submit;
     }
 
     fn submit_quest(&mut self) {
         let quest_id = self.quest_view.as_ref().unwrap().quest_id;
-        let output = self.quest_view.as_ref().unwrap().output.clone();
-        if let Some(quest) = quests::get(quest_id) {
-            let result = match (quest.verify)(&output) {
-                quests::VerifyResult::Pass => {
-                    self.completed.insert(quest_id);
-                    let _ = self.db.mark_completed(quest_id);
-                    TestResult::Pass
-                }
-                quests::VerifyResult::Fail(msg) => TestResult::Fail(msg),
-            };
-            self.quest_view.as_mut().unwrap().test_result = Some(result);
+        let answer = self.quest_view.as_ref().unwrap().answer.clone();
+
+        let quest = match self.quests.iter().find(|q| q.id == quest_id) {
+            Some(q) => q,
+            None => return,
+        };
+
+        // 1. Run DB verification checks.
+        let db_result = quest.verify_db(&db::quest_db_path());
+        if let quests::VerifyResult::Fail(msg) = db_result {
+            self.quest_view.as_mut().unwrap().test_result = Some(TestResult::Fail(msg));
+            return;
         }
+
+        // 2. Run input verification (if quest requires it).
+        let input_result = quest.verify_input(&answer);
+        if let quests::VerifyResult::Fail(msg) = input_result {
+            self.quest_view.as_mut().unwrap().test_result = Some(TestResult::Fail(msg));
+            return;
+        }
+
+        // All checks passed — mark complete.
+        self.completed.insert(quest_id);
+        let _ = self.db.mark_completed(quest_id);
+        self.quest_view.as_mut().unwrap().test_result = Some(TestResult::Pass);
     }
 
     // -----------------------------------------------------------------------
@@ -355,9 +508,13 @@ enum QuestAction {
     Backspace,
     CursorLeft,
     CursorRight,
+    AnswerInsert(char),
+    AnswerBackspace,
+    AnswerCursorLeft,
+    AnswerCursorRight,
     Run,
     Submit,
-    FocusInput,
+    FocusTerminal,
     FocusNext,
     FocusPrev,
     Back,
@@ -368,7 +525,7 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
     match key.code {
         KeyCode::Esc => QuestAction::Escape,
         _ => match qv.focus {
-            QuestFocus::Input => match key.code {
+            QuestFocus::Terminal => match key.code {
                 KeyCode::Char(c) => QuestAction::Insert(c),
                 KeyCode::Backspace => QuestAction::Backspace,
                 KeyCode::Left => QuestAction::CursorLeft,
@@ -377,25 +534,27 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::Tab => QuestAction::FocusNext,
                 _ => QuestAction::None,
             },
-            QuestFocus::Run => match key.code {
-                KeyCode::Enter => QuestAction::Run,
-                KeyCode::Tab | KeyCode::Right => QuestAction::FocusNext,
-                KeyCode::Left => QuestAction::FocusPrev,
-                KeyCode::Char(_) => QuestAction::FocusInput,
+            QuestFocus::Answer => match key.code {
+                KeyCode::Char(c) => QuestAction::AnswerInsert(c),
+                KeyCode::Backspace => QuestAction::AnswerBackspace,
+                KeyCode::Left => QuestAction::AnswerCursorLeft,
+                KeyCode::Right => QuestAction::AnswerCursorRight,
+                KeyCode::Tab => QuestAction::FocusNext,
+                KeyCode::Enter => QuestAction::FocusNext,
                 _ => QuestAction::None,
             },
             QuestFocus::Submit => match key.code {
                 KeyCode::Enter => QuestAction::Submit,
                 KeyCode::Tab | KeyCode::Right => QuestAction::FocusNext,
                 KeyCode::Left => QuestAction::FocusPrev,
-                KeyCode::Char(_) => QuestAction::FocusInput,
+                KeyCode::Char(_) => QuestAction::FocusTerminal,
                 _ => QuestAction::None,
             },
             QuestFocus::Back => match key.code {
                 KeyCode::Enter => QuestAction::Back,
                 KeyCode::Tab | KeyCode::Right => QuestAction::FocusNext,
                 KeyCode::Left => QuestAction::FocusPrev,
-                KeyCode::Char(_) => QuestAction::FocusInput,
+                KeyCode::Char(_) => QuestAction::FocusTerminal,
                 _ => QuestAction::None,
             },
         },

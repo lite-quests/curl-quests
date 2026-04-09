@@ -40,15 +40,16 @@ fn render_instructions(frame: &mut Frame, area: ratatui::layout::Rect) {
         Paragraph::new(
             "How to play:\n\n\
              1. Go to Levels and select a Quest\n\
-             2. Read the instructions in the quest view\n\
-             3. Type a curl command in the Command box\n\
-             4. Press Enter or [ Run ] to execute it\n\
-             5. Press [ Submit ] to check your answer\n\n\
+             2. The quest database is seeded and a server starts automatically\n\
+             3. Read the instructions and use the Terminal to run curl commands\n\
+             4. If the quest asks for an answer, type it in the Answer box\n\
+             5. Press [ Submit ] to verify — checks run against the database\n\
+             6. If you fail, try again! The quest stays open until you pass\n\n\
              Navigation:\n\
                Up / Down     Move sidebar selection\n\
                Enter         Open / activate\n\
-               Tab / ← →     Switch between buttons\n\
-               Esc           Go back\n\
+               Tab / ← →     Switch focus between sections\n\
+               Esc           Go back / dismiss result\n\
                q             Quit\n\n\
              Completed quests show green in the grid.\n\
              Use Reset to clear all progress.",

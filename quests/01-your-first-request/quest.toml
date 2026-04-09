@@ -1,0 +1,31 @@
+id = 1
+title = "The Heroes List"
+instructions = """
+A heroes database has been prepared with some initial heroes.
+A server is running at http://localhost:8080.
+
+Available endpoints:
+  GET  /heroes       — List all heroes
+
+Your mission:
+  1. Fetch the list of heroes using a GET request
+  2. Find the hero whose name starts with the letter 'L'
+  3. Type that hero's name in the answer box and submit"""
+hint = "curl http://localhost:8080/heroes"
+
+submit_prompt = "Which hero's name starts with 'L'?"
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS heroes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, power TEXT NOT NULL)",
+    "INSERT INTO heroes (name, power) VALUES ('Thor', 'Lightning')",
+    "INSERT INTO heroes (name, power) VALUES ('Loki', 'Illusion')",
+    "INSERT INTO heroes (name, power) VALUES ('Hulk', 'Strength')",
+]
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["Loki"]
+error = "That's not right. Look for the hero whose name starts with 'L'."
