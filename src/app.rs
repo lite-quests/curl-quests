@@ -224,6 +224,12 @@ impl App {
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
             self.handle_events()?;
+            
+            // Drain any pending events before redrawing to prevent lag on rapid input (like mouse scrolling)
+            while crossterm::event::poll(std::time::Duration::from_millis(0))? {
+                self.handle_events()?;
+                if self.exit { break; }
+            }
         }
         let _ = crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture);
         Ok(())
