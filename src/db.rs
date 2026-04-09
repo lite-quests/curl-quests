@@ -53,9 +53,16 @@ pub fn setup_quest_db(seed_sql: &[String]) -> std::result::Result<(), String> {
     let _ = std::fs::remove_file(&path);
     std::fs::create_dir_all("data").ok();
     let conn = Connection::open(&path).map_err(|e| format!("Failed to create quest DB: {e}"))?;
+    // Ensure writes are fully flushed to disk before the connection closes.
+    conn.execute_batch("PRAGMA synchronous=FULL;").ok();
+    // Wrap all seed statements in one transaction so they commit atomically.
+    conn.execute_batch("BEGIN;")
+        .map_err(|e| format!("Failed to begin transaction: {e}"))?;
     for sql in seed_sql {
         conn.execute_batch(sql)
             .map_err(|e| format!("Seed SQL failed: {e}"))?;
     }
+    conn.execute_batch("COMMIT;")
+        .map_err(|e| format!("Failed to commit seed: {e}"))?;
     Ok(())
 }

@@ -1,4 +1,7 @@
 #!/bin/sh
+# Kill any process still holding port 8080 from a previous session.
+lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+sleep 0.2
 python3 - <<'PYEOF'
 import json, os, sqlite3
 from http.server import HTTPServer, BaseHTTPRequestHandler
