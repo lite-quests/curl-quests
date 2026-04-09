@@ -1,0 +1,49 @@
+id = 2
+title = "Grocery Run"
+instructions = """
+A grocery list is running at http://localhost:8080.
+
+  GET  /groceries          — List all grocery items
+  POST /groceries          — Add an item (JSON: {"name": "..."})
+
+Tip — when running curl in a terminal you may see a progress bar.
+Use -s (silent) to suppress it and get clean output:
+
+  curl -s http://localhost:8080/groceries
+
+POST syntax breakdown:
+  curl -s                                    ← silent, no progress noise
+       -X POST                               ← set the HTTP method
+       -H "Content-Type: application/json"   ← tell the server it's JSON
+       -d '{"name":"Butter"}'                ← the JSON body
+       http://localhost:8080/groceries
+
+Your mission:
+  1. Fetch the current grocery list with a GET request
+  2. Add "Butter" to the list with a POST request
+  3. Add "Apples" to the list with a POST request
+  4. Fetch the list again to confirm both were added"""
+hint = """curl http://localhost:8080/groceries
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Butter"}' http://localhost:8080/groceries
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Apples"}' http://localhost:8080/groceries"""
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS groceries (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)",
+    "INSERT INTO groceries (name) VALUES ('Milk')",
+    "INSERT INTO groceries (name) VALUES ('Bread')",
+    "INSERT INTO groceries (name) VALUES ('Eggs')",
+]
+
+[server]
+port = 8080
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Butter'"
+expected = "1"
+error = "Butter was not found in the grocery list. POST it with: -d '{\"name\":\"Butter\"}'"
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Apples'"
+expected = "1"
+error = "Apples was not found in the grocery list. POST it with: -d '{\"name\":\"Apples\"}'"

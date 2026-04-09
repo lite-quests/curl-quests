@@ -204,6 +204,12 @@ impl App {
         }
     }
 
+    /// Stop the server and delete the quest DB — called whenever a quest session ends.
+    fn cleanup_quest(&mut self) {
+        self.stop_server();
+        let _ = std::fs::remove_file(db::quest_db_path());
+    }
+
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
@@ -411,7 +417,7 @@ impl App {
                 qv.focus = qv.focus.prev(qv.has_answer_input);
             }
             QuestAction::Back => {
-                self.stop_server();
+                self.cleanup_quest();
                 self.quest_view = None;
                 self.content_focused = true;
             }
@@ -420,7 +426,7 @@ impl App {
                 if qv.test_result.is_some() {
                     qv.test_result = None;
                 } else {
-                    self.stop_server();
+                    self.cleanup_quest();
                     self.quest_view = None;
                     self.content_focused = true;
                 }
@@ -442,12 +448,14 @@ impl App {
             Ok(out) => {
                 let stdout = String::from_utf8_lossy(&out.stdout).to_string();
                 let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-                if stdout.is_empty() {
-                    stderr
-                } else if stderr.is_empty() {
-                    stdout
-                } else {
+                if !stdout.is_empty() && !stderr.is_empty() {
                     format!("{}\n---stderr---\n{}", stdout, stderr)
+                } else if !stdout.is_empty() {
+                    stdout
+                } else if !stderr.is_empty() {
+                    stderr
+                } else {
+                    "(no output — is the server running? try again in a moment)".to_string()
                 }
             }
             Err(e) => format!("Failed to run command: {}", e),
@@ -481,9 +489,10 @@ impl App {
             return;
         }
 
-        // All checks passed — mark complete.
+        // All checks passed — mark complete, stop server, clean DB.
         self.completed.insert(quest_id);
         let _ = self.db.mark_completed(quest_id);
+        self.cleanup_quest();
         self.quest_view.as_mut().unwrap().test_result = Some(TestResult::Pass);
     }
 
