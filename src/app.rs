@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::io;
 use std::process::{Child, Stdio};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind};
 use ratatui::DefaultTerminal;
 
 use crate::db::{self, Db};
@@ -220,20 +220,42 @@ impl App {
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        let _ = crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture);
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
             self.handle_events()?;
         }
+        let _ = crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture);
         Ok(())
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                self.handle_key(key);
+        match event::read()? {
+            Event::Key(key) => {
+                if key.kind == KeyEventKind::Press {
+                    self.handle_key(key);
+                }
             }
+            Event::Mouse(mouse) => {
+                self.handle_mouse(mouse);
+            }
+            _ => {}
         }
         Ok(())
+    }
+
+    fn handle_mouse(&mut self, mouse: MouseEvent) {
+        if self.quest_view.is_some() {
+            match mouse.kind {
+                MouseEventKind::ScrollUp => {
+                    self.apply_quest_action(QuestAction::ScrollUp);
+                }
+                MouseEventKind::ScrollDown => {
+                    self.apply_quest_action(QuestAction::ScrollDown);
+                }
+                _ => {}
+            }
+        }
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
@@ -393,9 +415,17 @@ impl App {
             }
             QuestAction::PageUp => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.scroll_offset = qv.scroll_offset.saturating_add(3);
+                qv.scroll_offset = qv.scroll_offset.saturating_add(15);
             }
             QuestAction::PageDown => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.scroll_offset = qv.scroll_offset.saturating_sub(15);
+            }
+            QuestAction::ScrollUp => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.scroll_offset = qv.scroll_offset.saturating_add(3);
+            }
+            QuestAction::ScrollDown => {
                 let qv = self.quest_view.as_mut().unwrap();
                 qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
             }
@@ -588,6 +618,8 @@ enum QuestAction {
     CursorRight,
     PageUp,
     PageDown,
+    ScrollUp,
+    ScrollDown,
     HistoryUp,
     HistoryDown,
     AnswerInsert(char),
@@ -614,8 +646,20 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::Right => QuestAction::CursorRight,
                 KeyCode::PageUp => QuestAction::PageUp,
                 KeyCode::PageDown => QuestAction::PageDown,
-                KeyCode::Up => QuestAction::HistoryUp,
-                KeyCode::Down => QuestAction::HistoryDown,
+                KeyCode::Up => {
+                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                        QuestAction::ScrollUp
+                    } else {
+                        QuestAction::HistoryUp
+                    }
+                }
+                KeyCode::Down => {
+                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                        QuestAction::ScrollDown
+                    } else {
+                        QuestAction::HistoryDown
+                    }
+                }
                 KeyCode::Enter => QuestAction::Enter,
                 KeyCode::Tab => QuestAction::FocusNext,
                 _ => QuestAction::None,
