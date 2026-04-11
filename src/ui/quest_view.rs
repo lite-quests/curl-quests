@@ -43,7 +43,7 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let chunks = Layout::vertical(constraints).split(inner);
 
     let mut idx = 0;
-    render_instructions(frame, &quest.instructions, &quest.hint, chunks[idx]);
+    render_instructions(frame, qv, &quest.instructions, &quest.hint, chunks[idx]);
     idx += 1;
     render_terminal(frame, qv, chunks[idx]);
     idx += 1;
@@ -61,13 +61,23 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
 // Sections
 // ---------------------------------------------------------------------------
 
-fn render_instructions(frame: &mut Frame, instructions: &str, hint: &str, area: Rect) {
+fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &str, hint: &str, area: Rect) {
+    let focused = qv.focus == QuestFocus::Instructions;
+    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let title = if focused {
+        " Instructions (↑/↓ scroll  Tab) "
+    } else {
+        " Instructions "
+    };
+
     let block = Block::bordered()
-        .title(" Instructions ")
-        .border_style(Style::new().fg(Color::DarkGray));
+        .title(title)
+        .border_style(Style::new().fg(border_color));
     let text = format!("{}\n\nHint: {}", instructions, hint);
+    let scroll = qv.instructions_scroll_offset as u16;
+
     frame.render_widget(
-        Paragraph::new(text).block(block).wrap(Wrap { trim: false }),
+        Paragraph::new(text).block(block).wrap(Wrap { trim: false }).scroll((scroll, 0)),
         area,
     );
 }
