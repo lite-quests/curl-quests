@@ -115,7 +115,7 @@ impl QuestViewState {
             answer_cursor: 0,
             has_answer_input,
             test_result: None,
-            focus: QuestFocus::Terminal,
+            focus: QuestFocus::Instructions,
         }
     }
 }
@@ -130,6 +130,8 @@ pub struct App {
     pub reset_done: bool,
     pub quest_list_index: usize,
     pub content_focused: bool,
+    pub global_instructions_scroll: usize,
+    pub global_instructions_max_scroll: Cell<usize>,
     pub quest_view: Option<QuestViewState>,
     pub db: Db,
     pub completed: HashSet<usize>,
@@ -155,6 +157,8 @@ impl App {
             reset_done: false,
             quest_list_index: 0,
             content_focused: false,
+            global_instructions_scroll: 0,
+            global_instructions_max_scroll: Cell::new(0),
             quest_view: None,
             db,
             completed,
@@ -273,6 +277,18 @@ impl App {
                 }
                 _ => {}
             }
+        } else if self.sidebar_index == 1 {
+            match mouse.kind {
+                MouseEventKind::ScrollUp => {
+                    self.global_instructions_scroll = self.global_instructions_scroll.saturating_sub(3);
+                }
+                MouseEventKind::ScrollDown => {
+                    self.global_instructions_scroll = self.global_instructions_scroll
+                        .saturating_add(3)
+                        .min(self.global_instructions_max_scroll.get());
+                }
+                _ => {}
+            }
         }
     }
 
@@ -280,7 +296,11 @@ impl App {
         if self.quest_view.is_some() {
             self.handle_quest_key(key);
         } else if self.content_focused {
-            self.handle_list_key(key);
+            match self.sidebar_index {
+                0 => self.handle_list_key(key),
+                1 => self.handle_global_instructions_key(key),
+                _ => { self.content_focused = false; }
+            }
         } else {
             self.handle_overview_key(key);
         }
@@ -320,6 +340,7 @@ impl App {
                 } else {
                     match self.sidebar_index {
                         0 => self.content_focused = true,
+                        1 => self.content_focused = true,
                         2 => self.exit = true,
                         _ => {}
                     }
@@ -369,6 +390,34 @@ impl App {
             KeyCode::Enter => {
                 let id = self.quest_list_index + 1;
                 self.start_quest(id);
+            }
+            _ => {}
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Global instructions (sidebar tab) key handling
+    // -----------------------------------------------------------------------
+
+    fn handle_global_instructions_key(&mut self, key: KeyEvent) {
+        match key.code {
+            KeyCode::Char('q') => self.exit = true,
+            KeyCode::Esc | KeyCode::Left | KeyCode::Backspace => self.content_focused = false,
+            KeyCode::Up => {
+                self.global_instructions_scroll = self.global_instructions_scroll.saturating_sub(1);
+            }
+            KeyCode::Down => {
+                self.global_instructions_scroll = self.global_instructions_scroll
+                    .saturating_add(1)
+                    .min(self.global_instructions_max_scroll.get());
+            }
+            KeyCode::PageUp => {
+                self.global_instructions_scroll = self.global_instructions_scroll.saturating_sub(15);
+            }
+            KeyCode::PageDown => {
+                self.global_instructions_scroll = self.global_instructions_scroll
+                    .saturating_add(15)
+                    .min(self.global_instructions_max_scroll.get());
             }
             _ => {}
         }

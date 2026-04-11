@@ -189,6 +189,21 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
         Paragraph::new(lines).block(block).scroll((scroll, 0)),
         area,
     );
+
+    if max_scroll > 0 {
+        let mut scrollbar_state = ScrollbarState::default()
+            .content_length(max_scroll as usize)
+            .position(scroll as usize);
+            
+        frame.render_stateful_widget(
+            Scrollbar::default()
+                .orientation(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓")),
+            area,
+            &mut scrollbar_state,
+        );
+    }
 }
 
 fn render_answer_input(frame: &mut Frame, qv: &QuestViewState, prompt: &str, area: Rect) {
