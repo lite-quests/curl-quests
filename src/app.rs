@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::collections::HashSet;
 use std::io;
 use std::process::{Child, Stdio};
@@ -78,8 +79,12 @@ pub struct QuestViewState {
     pub input: String,
     pub cursor: usize,
     pub scroll_offset: usize,
+    /// The maximum possible scroll offset for the terminal view, calculated during render.
+    pub max_terminal_scroll: Cell<usize>,
     /// Current scroll offset for instructions view.
     pub instructions_scroll_offset: usize,
+    /// The maximum possible scroll offset for instructions view, calculated during render.
+    pub max_instructions_scroll: Cell<usize>,
     /// Currently viewing history index.
     pub history_index: Option<usize>,
     /// The input typed before starting to navigate history.
@@ -101,7 +106,9 @@ impl QuestViewState {
             input: String::new(),
             cursor: 0,
             scroll_offset: 0,
+            max_terminal_scroll: Cell::new(0),
             instructions_scroll_offset: 0,
+            max_instructions_scroll: Cell::new(0),
             history_index: None,
             pending_input: String::new(),
             answer: String::new(),
@@ -429,13 +436,13 @@ impl App {
                 if qv.focus == QuestFocus::Instructions {
                     qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_sub(15);
                 } else {
-                    qv.scroll_offset = qv.scroll_offset.saturating_add(15);
+                    qv.scroll_offset = qv.scroll_offset.saturating_add(15).min(qv.max_terminal_scroll.get());
                 }
             }
             QuestAction::PageDown => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.focus == QuestFocus::Instructions {
-                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(15);
+                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(15).min(qv.max_instructions_scroll.get());
                 } else {
                     qv.scroll_offset = qv.scroll_offset.saturating_sub(15);
                 }
@@ -445,13 +452,13 @@ impl App {
                 if qv.focus == QuestFocus::Instructions {
                     qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_sub(3);
                 } else {
-                    qv.scroll_offset = qv.scroll_offset.saturating_add(3);
+                    qv.scroll_offset = qv.scroll_offset.saturating_add(3).min(qv.max_terminal_scroll.get());
                 }
             }
             QuestAction::ScrollDown => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.focus == QuestFocus::Instructions {
-                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(3);
+                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(3).min(qv.max_instructions_scroll.get());
                 } else {
                     qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
                 }

@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Paragraph, Wrap},
+    widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
 };
 
 use crate::app::{App, QuestFocus, QuestViewState, TestResult};
@@ -61,6 +61,16 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
 // Sections
 // ---------------------------------------------------------------------------
 
+fn count_wrapped_lines(text: &str, width: u16) -> u16 {
+    let mut count = 0;
+    let w = width.max(1) as usize;
+    for line in text.lines() {
+        let len = line.chars().count();
+        count += (len / w) as u16 + 1;
+    }
+    count
+}
+
 fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &str, hint: &str, area: Rect) {
     let focused = qv.focus == QuestFocus::Instructions;
     let border_color = if focused { Color::Yellow } else { Color::DarkGray };
@@ -74,12 +84,32 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
         .title(title)
         .border_style(Style::new().fg(border_color));
     let text = format!("{}\n\nHint: {}", instructions, hint);
-    let scroll = qv.instructions_scroll_offset as u16;
+    let inner = block.inner(area);
+    let total_lines = count_wrapped_lines(&text, inner.width);
+    let max_scroll = total_lines.saturating_sub(inner.height);
+    qv.max_instructions_scroll.set(max_scroll as usize);
+    
+    let scroll = qv.instructions_scroll_offset.min(max_scroll as usize) as u16;
 
     frame.render_widget(
         Paragraph::new(text).block(block).wrap(Wrap { trim: false }).scroll((scroll, 0)),
         area,
     );
+
+    if max_scroll > 0 {
+        let mut scrollbar_state = ScrollbarState::default()
+            .content_length(max_scroll as usize)
+            .position(scroll as usize);
+            
+        frame.render_stateful_widget(
+            Scrollbar::default()
+                .orientation(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓")),
+            area,
+            &mut scrollbar_state,
+        );
+    }
 }
 
 fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
@@ -151,6 +181,7 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let total_lines = lines.len() as u16;
     let visible = inner.height;
     let max_scroll = total_lines.saturating_sub(visible);
+    qv.max_terminal_scroll.set(max_scroll as usize);
     let effective_scroll_offset = qv.scroll_offset.min(max_scroll as usize) as u16;
     let scroll = max_scroll.saturating_sub(effective_scroll_offset);
 
