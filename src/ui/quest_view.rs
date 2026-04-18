@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Paragraph, Wrap},
+    widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
 };
 
 use crate::app::{App, QuestFocus, QuestViewState, TestResult};
@@ -43,7 +43,7 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let chunks = Layout::vertical(constraints).split(inner);
 
     let mut idx = 0;
-    render_instructions(frame, &quest.instructions, &quest.hint, chunks[idx]);
+    render_instructions(frame, qv, &quest.instructions, &quest.hint, chunks[idx]);
     idx += 1;
     render_terminal(frame, qv, chunks[idx]);
     idx += 1;
@@ -61,14 +61,50 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
 // Sections
 // ---------------------------------------------------------------------------
 
-fn render_instructions(frame: &mut Frame, instructions: &str, hint: &str, area: Rect) {
+fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &str, hint: &str, area: Rect) {
+    let focused = qv.focus == QuestFocus::Instructions;
+    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let title = if focused {
+        " Instructions — ↑↓ scroll  Tab next "
+    } else {
+        " Instructions — ↑↓ to scroll "
+    };
     let block = Block::bordered()
-        .title(" Instructions ")
-        .border_style(Style::new().fg(Color::DarkGray));
+        .title(title)
+        .border_style(Style::new().fg(border_color));
     let text = format!("{}\n\nHint: {}", instructions, hint);
+
+    // Count source lines and estimate display lines accounting for word wrap.
+    let inner_width = area.width.saturating_sub(2).max(1) as usize;
+    let inner_height = area.height.saturating_sub(2);
+    let total_display_lines: usize = text.lines().map(|l| {
+        let chars = l.chars().count();
+        // Rough word-wrap estimate: assume ~80% fill efficiency due to word boundaries
+        ((chars * 10 / 8 + inner_width - 1) / inner_width).max(1)
+    }).sum();
+    let max_scroll = (total_display_lines as u16).saturating_sub(inner_height);
+    let scroll = (qv.instructions_scroll_offset as u16).min(max_scroll);
+
     frame.render_widget(
-        Paragraph::new(text).block(block).wrap(Wrap { trim: false }),
+        Paragraph::new(text.clone()).block(block).wrap(Wrap { trim: false }).scroll((scroll, 0)),
         area,
+    );
+
+    // Scrollbar on the right edge (always shown so user knows content is scrollable)
+    let scrollbar_area = Rect {
+        x: area.x + area.width - 1,
+        y: area.y + 1,
+        width: 1,
+        height: area.height.saturating_sub(2),
+    };
+    let mut scrollbar_state = ScrollbarState::new(max_scroll as usize)
+        .position(scroll as usize);
+    frame.render_stateful_widget(
+        Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓")),
+        scrollbar_area,
+        &mut scrollbar_state,
     );
 }
 
@@ -76,7 +112,7 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let focused = qv.focus == QuestFocus::Terminal;
     let border_color = if focused { Color::Yellow } else { Color::DarkGray };
     let title = if focused {
-        " Terminal (Enter to run  Tab to navigate) "
+        " Terminal (Enter to run  Tab to navigate  Shift+↑↓ scroll) "
     } else {
         " Terminal "
     };

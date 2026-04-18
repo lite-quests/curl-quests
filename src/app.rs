@@ -16,6 +16,7 @@ pub const SIDEBAR_ITEMS: [&str; 3] = ["  Levels", "  Instructions", "  Exit"];
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum QuestFocus {
+    Instructions,
     Terminal,
     Answer,
     Submit,
@@ -25,6 +26,7 @@ pub enum QuestFocus {
 impl QuestFocus {
     pub fn next(&self, has_answer: bool) -> Self {
         match self {
+            Self::Instructions => Self::Terminal,
             Self::Terminal => {
                 if has_answer {
                     Self::Answer
@@ -34,12 +36,13 @@ impl QuestFocus {
             }
             Self::Answer => Self::Submit,
             Self::Submit => Self::Back,
-            Self::Back => Self::Terminal,
+            Self::Back => Self::Instructions,
         }
     }
     pub fn prev(&self, has_answer: bool) -> Self {
         match self {
-            Self::Terminal => Self::Back,
+            Self::Instructions => Self::Back,
+            Self::Terminal => Self::Instructions,
             Self::Answer => Self::Terminal,
             Self::Submit => {
                 if has_answer {
@@ -76,6 +79,8 @@ pub struct QuestViewState {
     pub cursor: usize,
     /// Current scroll offset for terminal view.
     pub scroll_offset: usize,
+    /// Current scroll offset for instructions view.
+    pub instructions_scroll_offset: usize,
     /// Currently viewing history index.
     pub history_index: Option<usize>,
     /// The input typed before starting to navigate history.
@@ -97,13 +102,14 @@ impl QuestViewState {
             input: String::new(),
             cursor: 0,
             scroll_offset: 0,
+            instructions_scroll_offset: 0,
             history_index: None,
             pending_input: String::new(),
             answer: String::new(),
             answer_cursor: 0,
             has_answer_input,
             test_result: None,
-            focus: QuestFocus::Terminal,
+            focus: QuestFocus::Instructions,
         }
     }
 }
@@ -421,19 +427,35 @@ impl App {
             }
             QuestAction::PageUp => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.scroll_offset = qv.scroll_offset.saturating_add(15);
+                if qv.focus == QuestFocus::Instructions {
+                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_sub(15);
+                } else {
+                    qv.scroll_offset = qv.scroll_offset.saturating_add(15);
+                }
             }
             QuestAction::PageDown => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.scroll_offset = qv.scroll_offset.saturating_sub(15);
+                if qv.focus == QuestFocus::Instructions {
+                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(15);
+                } else {
+                    qv.scroll_offset = qv.scroll_offset.saturating_sub(15);
+                }
             }
             QuestAction::ScrollUp => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.scroll_offset = qv.scroll_offset.saturating_add(3);
+                if qv.focus == QuestFocus::Instructions {
+                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_sub(3);
+                } else {
+                    qv.scroll_offset = qv.scroll_offset.saturating_add(3);
+                }
             }
             QuestAction::ScrollDown => {
                 let qv = self.quest_view.as_mut().unwrap();
-                qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
+                if qv.focus == QuestFocus::Instructions {
+                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(3);
+                } else {
+                    qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
+                }
             }
             QuestAction::HistoryUp => {
                 let qv = self.quest_view.as_mut().unwrap();
@@ -645,6 +667,13 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
     match key.code {
         KeyCode::Esc => QuestAction::Escape,
         _ => match qv.focus {
+            QuestFocus::Instructions => match key.code {
+                KeyCode::Up | KeyCode::PageUp => QuestAction::ScrollUp,
+                KeyCode::Down | KeyCode::PageDown => QuestAction::ScrollDown,
+                KeyCode::Tab => QuestAction::FocusNext,
+                KeyCode::BackTab => QuestAction::FocusPrev,
+                _ => QuestAction::None,
+            },
             QuestFocus::Terminal => match key.code {
                 KeyCode::Char(c) => QuestAction::Insert(c),
                 KeyCode::Backspace => QuestAction::Backspace,
