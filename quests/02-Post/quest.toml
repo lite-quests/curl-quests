@@ -1,6 +1,11 @@
 id = 2
 title = "Grocery Run"
 instructions = """
+GET only reads data. To create something — a new user, a comment, an order —
+you need POST. POST sends a body alongside the request, which is how you pass
+data to the server. JSON is the most common format for that body, and the
+Content-Type header is how you tell the server what format you're sending.
+
 A grocery list is running at http://localhost:8080.
 
   GET  /groceries          — List all grocery items

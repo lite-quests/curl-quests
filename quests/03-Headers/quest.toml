@@ -1,6 +1,12 @@
 id = 3
 title = "Strict API Contracts"
 instructions = """
+Headers are metadata that travel alongside every HTTP request and response.
+They tell the server who you are, what format you're sending, what you'll accept
+back, and more. Real-world APIs use headers for authentication (API keys, tokens),
+content negotiation, rate limiting, and versioning. Getting headers right is the
+difference between a 200 and a 401.
+
 The grocery API has been upgraded. It now enforces strict request rules.
 
 Base URL: http://localhost:8080

@@ -1,6 +1,11 @@
 id = 1
 title = "The Heroes List"
 instructions = """
+The web runs on HTTP. Every time your browser loads a page, fetches data,
+or checks for updates — it's making a GET request. GET is the most fundamental
+HTTP method: ask the server for something, get a response back. curl lets you
+do the same thing from your terminal, without a browser.
+
 A heroes database has been prepared with some initial heroes.
 A server is running at http://localhost:8080.
 

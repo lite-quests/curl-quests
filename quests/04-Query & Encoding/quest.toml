@@ -1,6 +1,12 @@
 id = 4
 title = "The Elemental Search"
 instructions = """
+Search, filter, sort, paginate — query parameters are how APIs let you ask
+for exactly what you need instead of dumping everything. They live in the URL
+after a ?, and every character matters. Spaces, special characters, and
+reserved symbols must be URL-encoded or the server won't understand them.
+This is one of the most common sources of bugs when working with APIs.
+
 Professor Oak has built a Pokémon search API at http://localhost:8080.
 
 Available endpoint:
