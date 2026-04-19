@@ -1,0 +1,119 @@
+id = 3
+title = "Strict API Contracts"
+instructions = """
+The grocery API has been upgraded. It now enforces strict request rules.
+
+Base URL: http://localhost:8080
+
+  GET  /groceries          — List all grocery items
+  POST /groceries          — Add an item
+
+New Requirements:
+
+1. ALL requests (GET and POST) MUST include:
+     -H "x-api-key: secret123"
+
+2. POST requests support multiple Content-Types:
+   - application/json
+   - application/x-www-form-urlencoded
+
+3. The server behaves differently based on headers:
+   - Missing API key → 401 Unauthorized
+   - Wrong API key → 403 Forbidden
+   - Unsupported Content-Type → 415 Unsupported Media Type
+   - Invalid body → 400 Bad Request
+
+4. Adding "Bananas" requires one extra header:
+     -H "Done: Success"
+   Without it, the server will reject the request.
+
+---
+
+POST syntax examples:
+
+JSON request:
+  curl -s \
+       -X POST \
+       -H "x-api-key: secret123" \
+       -H "Content-Type: application/json" \
+       -d '{"name":"Butter"}' \
+       http://localhost:8080/groceries
+
+Form request:
+  curl -s \
+       -X POST \
+       -H "x-api-key: secret123" \
+       -H "Content-Type: application/x-www-form-urlencoded" \
+       -d "name=Apples" \
+       http://localhost:8080/groceries
+
+---
+
+Your mission:
+
+1. Fetch the current grocery list (remember: API key required)
+2. Add "Butter" using JSON format
+3. Add "Apples" using form-urlencoded format
+4. Add "Bananas" using JSON format with the extra header: -H "Done: Success"
+5. Fetch the list again to confirm all items were added and submit the quest
+
+Pay attention to:
+- headers (-H)
+- body format (-d)
+- server responses (status codes)
+"""
+hint = """# 1. Fetch the list (API key required on GET too)
+curl -s -H "x-api-key: secret123" http://localhost:8080/groceries
+
+# 2. Add Butter (JSON)
+curl -s -X POST -H "x-api-key: secret123" -H "Content-Type: application/json" -d '{"name":"Butter"}' http://localhost:8080/groceries
+
+# 3. Add Apples (form-urlencoded)
+curl -s -X POST -H "x-api-key: secret123" -H "Content-Type: application/x-www-form-urlencoded" -d "name=Apples" http://localhost:8080/groceries
+
+# 4. Add Bananas (JSON + Done header)
+curl -s -X POST -H "x-api-key: secret123" -H "Content-Type: application/json" -H "Done: Success" -d '{"name":"Bananas"}' http://localhost:8080/groceries
+
+# 5. Confirm
+curl -s -H "x-api-key: secret123" http://localhost:8080/groceries"""
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS groceries (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, content_type TEXT, done_header TEXT)",
+    "INSERT INTO groceries (name) VALUES ('Milk')",
+    "INSERT INTO groceries (name) VALUES ('Bread')",
+    "INSERT INTO groceries (name) VALUES ('Eggs')",
+]
+
+[server]
+port = 8080
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Butter'"
+expected = "1"
+error = "Butter not found. POST it with: -H \"x-api-key: secret123\" -H \"Content-Type: application/json\" -d '{\"name\":\"Butter\"}'"
+
+[[verify.checks]]
+sql = "SELECT content_type FROM groceries WHERE name = 'Butter'"
+expected = "application/json"
+error = "Butter must be added using Content-Type: application/json, not form-urlencoded."
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Apples'"
+expected = "1"
+error = "Apples not found. POST it with: -H \"x-api-key: secret123\" -H \"Content-Type: application/x-www-form-urlencoded\" -d \"name=Apples\""
+
+[[verify.checks]]
+sql = "SELECT content_type FROM groceries WHERE name = 'Apples'"
+expected = "application/x-www-form-urlencoded"
+error = "Apples must be added using Content-Type: application/x-www-form-urlencoded — use -H \"Content-Type: application/x-www-form-urlencoded\" -d \"name=Apples\""
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Bananas'"
+expected = "1"
+error = "Bananas not found. POST it with: -H \"x-api-key: secret123\" -H \"Content-Type: application/json\" -H \"Done: Success\" -d '{\"name\":\"Bananas\"}'"
+
+[[verify.checks]]
+sql = "SELECT done_header FROM groceries WHERE name = 'Bananas'"
+expected = "Success"
+error = "Bananas was added but without the required header. Use: -H \"Done: Success\""
