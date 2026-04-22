@@ -814,6 +814,7 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 }
                 KeyCode::Enter => QuestAction::Enter,
                 KeyCode::Tab => QuestAction::FocusNext,
+                KeyCode::BackTab => QuestAction::FocusPrev,
                 _ => QuestAction::None,
             },
             QuestFocus::Answer => match key.code {
@@ -822,20 +823,21 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::Left => QuestAction::AnswerCursorLeft,
                 KeyCode::Right => QuestAction::AnswerCursorRight,
                 KeyCode::Tab => QuestAction::FocusNext,
+                KeyCode::BackTab => QuestAction::FocusPrev,
                 KeyCode::Enter => QuestAction::FocusNext,
                 _ => QuestAction::None,
             },
             QuestFocus::Submit => match key.code {
                 KeyCode::Enter => QuestAction::Submit,
                 KeyCode::Tab | KeyCode::Right => QuestAction::FocusNext,
-                KeyCode::Left => QuestAction::FocusPrev,
+                KeyCode::BackTab | KeyCode::Left => QuestAction::FocusPrev,
                 KeyCode::Char(_) => QuestAction::FocusTerminal,
                 _ => QuestAction::None,
             },
             QuestFocus::Back => match key.code {
                 KeyCode::Enter => QuestAction::Back,
                 KeyCode::Tab | KeyCode::Right => QuestAction::FocusNext,
-                KeyCode::Left => QuestAction::FocusPrev,
+                KeyCode::BackTab | KeyCode::Left => QuestAction::FocusPrev,
                 KeyCode::Char(_) => QuestAction::FocusTerminal,
                 _ => QuestAction::None,
             },
