@@ -481,6 +481,14 @@ impl App {
                     }
                 }
             }
+            QuestAction::CursorWordLeft => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.cursor = find_word_left(&qv.input, qv.cursor);
+            }
+            QuestAction::CursorWordRight => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.cursor = find_word_right(&qv.input, qv.cursor);
+            }
             QuestAction::PageUp => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.focus == QuestFocus::Instructions {
@@ -570,6 +578,14 @@ impl App {
                 if qv.answer_cursor < qv.answer.len() {
                     qv.answer_cursor += 1;
                 }
+            }
+            QuestAction::AnswerCursorWordLeft => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.answer_cursor = find_word_left(&qv.answer, qv.answer_cursor);
+            }
+            QuestAction::AnswerCursorWordRight => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.answer_cursor = find_word_right(&qv.answer, qv.answer_cursor);
             }
 
             QuestAction::Enter => {
@@ -740,6 +756,8 @@ enum QuestAction {
     Backspace,
     CursorLeft,
     CursorRight,
+    CursorWordLeft,
+    CursorWordRight,
     PageUp,
     PageDown,
     ScrollUp,
@@ -750,6 +768,8 @@ enum QuestAction {
     AnswerBackspace,
     AnswerCursorLeft,
     AnswerCursorRight,
+    AnswerCursorWordLeft,
+    AnswerCursorWordRight,
     Enter,
     Submit,
     FocusTerminal,
@@ -780,17 +800,23 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
             QuestFocus::Terminal => match key.code {
                 KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::Paste,
                 KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::CopyLastOutput,
+                KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordLeft,
+                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordRight,
                 KeyCode::Char(c) => QuestAction::Insert(c),
                 KeyCode::Backspace => QuestAction::Backspace,
                 KeyCode::Left => {
-                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                    if key.modifiers.contains(KeyModifiers::ALT) {
+                        QuestAction::CursorWordLeft
+                    } else if key.modifiers.contains(KeyModifiers::SHIFT) {
                         QuestAction::HScrollLeft
                     } else {
                         QuestAction::CursorLeft
                     }
                 }
                 KeyCode::Right => {
-                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                    if key.modifiers.contains(KeyModifiers::ALT) {
+                        QuestAction::CursorWordRight
+                    } else if key.modifiers.contains(KeyModifiers::SHIFT) {
                         QuestAction::HScrollRight
                     } else {
                         QuestAction::CursorRight
@@ -818,10 +844,24 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 _ => QuestAction::None,
             },
             QuestFocus::Answer => match key.code {
+                KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::AnswerCursorWordLeft,
+                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::AnswerCursorWordRight,
                 KeyCode::Char(c) => QuestAction::AnswerInsert(c),
                 KeyCode::Backspace => QuestAction::AnswerBackspace,
-                KeyCode::Left => QuestAction::AnswerCursorLeft,
-                KeyCode::Right => QuestAction::AnswerCursorRight,
+                KeyCode::Left => {
+                    if key.modifiers.contains(KeyModifiers::ALT) {
+                        QuestAction::AnswerCursorWordLeft
+                    } else {
+                        QuestAction::AnswerCursorLeft
+                    }
+                }
+                KeyCode::Right => {
+                    if key.modifiers.contains(KeyModifiers::ALT) {
+                        QuestAction::AnswerCursorWordRight
+                    } else {
+                        QuestAction::AnswerCursorRight
+                    }
+                }
                 KeyCode::Tab => QuestAction::FocusNext,
                 KeyCode::BackTab => QuestAction::FocusPrev,
                 KeyCode::Enter => QuestAction::FocusNext,
@@ -843,4 +883,37 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
             },
         },
     }
+}
+
+fn find_word_left(s: &str, cursor: usize) -> usize {
+    if cursor == 0 { return 0; }
+    let mut new_cursor = cursor;
+    while new_cursor > 0 {
+        let c = s[..new_cursor].chars().next_back().unwrap_or(' ');
+        if c.is_alphanumeric() { break; }
+        new_cursor -= c.len_utf8();
+    }
+    while new_cursor > 0 {
+        let c = s[..new_cursor].chars().next_back().unwrap_or(' ');
+        if !c.is_alphanumeric() { break; }
+        new_cursor -= c.len_utf8();
+    }
+    new_cursor
+}
+
+fn find_word_right(s: &str, cursor: usize) -> usize {
+    let len = s.len();
+    if cursor >= len { return len; }
+    let mut new_cursor = cursor;
+    while new_cursor < len {
+        let c = s[new_cursor..].chars().next().unwrap_or(' ');
+        if !c.is_alphanumeric() { break; }
+        new_cursor += c.len_utf8();
+    }
+    while new_cursor < len {
+        let c = s[new_cursor..].chars().next().unwrap_or(' ');
+        if c.is_alphanumeric() { break; }
+        new_cursor += c.len_utf8();
+    }
+    new_cursor.min(len)
 }
