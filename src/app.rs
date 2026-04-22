@@ -11,6 +11,7 @@ use crate::quests;
 
 pub const SIDEBAR_ITEMS: [&str; 3] = ["  Levels", "  Instructions", "  Exit"];
 
+
 // ---------------------------------------------------------------------------
 // State types
 // ---------------------------------------------------------------------------
@@ -79,6 +80,8 @@ pub struct QuestViewState {
     pub input: String,
     pub cursor: usize,
     pub scroll_offset: usize,
+    /// Current horizontal scroll offset for terminal view.
+    pub h_scroll_offset: usize,
     /// The maximum possible scroll offset for the terminal view, calculated during render.
     pub max_terminal_scroll: Cell<usize>,
     /// Current scroll offset for instructions view.
@@ -106,6 +109,7 @@ impl QuestViewState {
             input: String::new(),
             cursor: 0,
             scroll_offset: 0,
+            h_scroll_offset: 0,
             max_terminal_scroll: Cell::new(0),
             instructions_scroll_offset: 0,
             max_instructions_scroll: Cell::new(0),
@@ -236,18 +240,14 @@ impl App {
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        let _ = crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture);
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
             self.handle_events()?;
-            
-            // Drain any pending events before redrawing to prevent lag on rapid input (like mouse scrolling)
             while crossterm::event::poll(std::time::Duration::from_millis(0))? {
                 self.handle_events()?;
                 if self.exit { break; }
             }
         }
-        let _ = crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture);
         Ok(())
     }
 
@@ -257,9 +257,6 @@ impl App {
                 if key.kind == KeyEventKind::Press {
                     self.handle_key(key);
                 }
-            }
-            Event::Mouse(mouse) => {
-                self.handle_mouse(mouse);
             }
             _ => {}
         }
@@ -291,7 +288,6 @@ impl App {
             }
         }
     }
-
     fn handle_key(&mut self, key: KeyEvent) {
         if self.quest_view.is_some() {
             self.handle_quest_key(key);
@@ -610,6 +606,45 @@ impl App {
                     self.content_focused = true;
                 }
             }
+
+            QuestAction::Paste => {
+                if let Ok(out) = std::process::Command::new("pbpaste").output() {
+                    let text = String::from_utf8_lossy(&out.stdout).to_string();
+                    let qv = self.quest_view.as_mut().unwrap();
+                    for c in text.chars() {
+                        if c == '\r' { continue; }
+                        qv.input.insert(qv.cursor, c);
+                        qv.cursor += c.len_utf8();
+                    }
+                    qv.scroll_offset = 0;
+                }
+            }
+
+            QuestAction::HScrollLeft => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.h_scroll_offset = qv.h_scroll_offset.saturating_sub(8);
+            }
+            QuestAction::HScrollRight => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.h_scroll_offset = qv.h_scroll_offset.saturating_add(8);
+            }
+
+            QuestAction::CopyLastOutput => {
+                let qv = self.quest_view.as_ref().unwrap();
+                if let Some(last) = qv.history.last() {
+                    let output = last.output.clone();
+                    let mut child = std::process::Command::new("pbcopy")
+                        .stdin(std::process::Stdio::piped())
+                        .spawn()
+                        .ok();
+                    if let Some(ref mut c) = child {
+                        if let Some(stdin) = c.stdin.as_mut() {
+                            let _ = std::io::Write::write_all(stdin, output.as_bytes());
+                        }
+                        let _ = c.wait();
+                    }
+                }
+            }
         }
     }
 
@@ -643,6 +678,7 @@ impl App {
         qv.input.clear();
         qv.cursor = 0;
         qv.scroll_offset = 0;
+        qv.h_scroll_offset = 0;
         qv.history_index = None;
         qv.pending_input.clear();
         qv.test_result = None;
@@ -716,6 +752,10 @@ enum QuestAction {
     FocusPrev,
     Back,
     Escape,
+    Paste,
+    CopyLastOutput,
+    HScrollLeft,
+    HScrollRight,
 }
 
 fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
@@ -728,14 +768,29 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::PageUp => QuestAction::PageUp,
                 KeyCode::PageDown => QuestAction::PageDown,
                 KeyCode::Tab => QuestAction::FocusNext,
+                KeyCode::BackTab => QuestAction::FocusPrev,
                 KeyCode::Enter => QuestAction::FocusNext,
                 _ => QuestAction::None,
             },
             QuestFocus::Terminal => match key.code {
+                KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::Paste,
+                KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::CopyLastOutput,
                 KeyCode::Char(c) => QuestAction::Insert(c),
                 KeyCode::Backspace => QuestAction::Backspace,
-                KeyCode::Left => QuestAction::CursorLeft,
-                KeyCode::Right => QuestAction::CursorRight,
+                KeyCode::Left => {
+                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                        QuestAction::HScrollLeft
+                    } else {
+                        QuestAction::CursorLeft
+                    }
+                }
+                KeyCode::Right => {
+                    if key.modifiers.contains(KeyModifiers::SHIFT) {
+                        QuestAction::HScrollRight
+                    } else {
+                        QuestAction::CursorRight
+                    }
+                }
                 KeyCode::PageUp => QuestAction::PageUp,
                 KeyCode::PageDown => QuestAction::PageDown,
                 KeyCode::Up => {

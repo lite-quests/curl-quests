@@ -14,7 +14,11 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
         None => return,
     };
 
-    let done_badge = if app.completed.contains(&qv.quest_id) { " ✓" } else { "" };
+    let done_badge = if app.completed.contains(&qv.quest_id) {
+        " ✓"
+    } else {
+        ""
+    };
     let title = format!(
         " Quest {}/{}: {}{} ",
         qv.quest_id,
@@ -75,11 +79,10 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
     let focused = qv.focus == QuestFocus::Instructions;
     let border_color = if focused { Color::Yellow } else { Color::DarkGray };
     let title = if focused {
-        " Instructions (↑/↓ scroll  Tab) "
+        " Instructions (↑/↓ scroll  Tab next) "
     } else {
         " Instructions "
     };
-
     let block = Block::bordered()
         .title(title)
         .border_style(Style::new().fg(border_color));
@@ -114,9 +117,13 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
 
 fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let focused = qv.focus == QuestFocus::Terminal;
-    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let border_color = if focused {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    };
     let title = if focused {
-        " Terminal (Enter to run  Tab to navigate) "
+        " Terminal (Enter to run  Tab navigate  Shift+↑↓↔ scroll  Ctrl+V paste  Ctrl+C copy output) "
     } else {
         " Terminal "
     };
@@ -153,14 +160,21 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
 
     // Live input prompt at the bottom
     let mut spans = vec![Span::styled("$ ", Style::new().fg(Color::Green).bold())];
-    
+
     for (i, c) in qv.input.char_indices() {
         let is_cursor = i == qv.cursor && focused;
-        let style = if is_cursor { Style::new().fg(Color::Black).bg(Color::White) } else { Style::new() };
-        
+        let style = if is_cursor {
+            Style::new().fg(Color::Black).bg(Color::White)
+        } else {
+            Style::new()
+        };
+
         if c == '\n' {
             if is_cursor {
-                spans.push(Span::styled("█", Style::new().fg(Color::Black).bg(Color::White)));
+                spans.push(Span::styled(
+                    "█",
+                    Style::new().fg(Color::Black).bg(Color::White),
+                ));
             }
             lines.push(Line::from(spans));
             spans = vec![Span::styled("> ", Style::new().fg(Color::Green).bold())];
@@ -168,11 +182,11 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
             spans.push(Span::styled(c.to_string(), style));
         }
     }
-    
+
     if qv.cursor == qv.input.len() {
         spans.push(Span::styled(
             if focused { "█" } else { "" },
-            Style::new().bg(Color::White).fg(Color::Black)
+            Style::new().bg(Color::White).fg(Color::Black),
         ));
     }
     lines.push(Line::from(spans));
@@ -186,7 +200,9 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let scroll = max_scroll.saturating_sub(effective_scroll_offset);
 
     frame.render_widget(
-        Paragraph::new(lines).block(block).scroll((scroll, 0)),
+        Paragraph::new(lines)
+            .block(block)
+            .scroll((scroll, qv.h_scroll_offset as u16)),
         area,
     );
 
@@ -208,7 +224,11 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
 
 fn render_answer_input(frame: &mut Frame, qv: &QuestViewState, prompt: &str, area: Rect) {
     let focused = qv.focus == QuestFocus::Answer;
-    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let border_color = if focused {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    };
     let title = format!(" {} ", prompt);
 
     let block = Block::bordered()
@@ -254,8 +274,16 @@ fn render_buttons(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     let sel = Style::new().bg(Color::Yellow).fg(Color::Black).bold();
     let normal = Style::new().fg(Color::White);
 
-    let sub_s = if qv.focus == QuestFocus::Submit { sel } else { normal };
-    let back_s = if qv.focus == QuestFocus::Back { sel } else { normal };
+    let sub_s = if qv.focus == QuestFocus::Submit {
+        sel
+    } else {
+        normal
+    };
+    let back_s = if qv.focus == QuestFocus::Back {
+        sel
+    } else {
+        normal
+    };
 
     let line = Line::from(vec![
         Span::raw("  "),
@@ -263,10 +291,7 @@ fn render_buttons(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
         Span::raw("   "),
         Span::styled("[ Back ]", back_s),
         Span::raw("   "),
-        Span::styled(
-            "Tab/←→ switch  Esc back",
-            Style::new().fg(Color::DarkGray),
-        ),
+        Span::styled("Tab/←→ switch  Esc back", Style::new().fg(Color::DarkGray)),
     ]);
 
     let block = Block::bordered().border_style(Style::new().fg(Color::DarkGray));

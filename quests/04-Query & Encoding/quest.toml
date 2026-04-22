@@ -1,0 +1,93 @@
+id = 4
+title = "The Elemental Search"
+instructions = """
+Search, filter, sort, paginate — query parameters are how APIs let you ask
+for exactly what you need instead of dumping everything. They live in the URL
+after a ?, and every character matters. Spaces, special characters, and
+reserved symbols must be URL-encoded or the server won't understand them.
+This is one of the most common sources of bugs when working with APIs.
+
+Professor Oak has built a Pokémon search API at http://localhost:8080.
+
+Available endpoint:
+  GET /pokemon/search
+
+You can filter Pokémon using query parameters.
+
+Important: always wrap URLs in double quotes in your terminal.
+Without quotes, the shell treats & as a background operator and
+strips everything after it — your filters will silently disappear.
+
+  curl "http://localhost:8080/pokemon/search?type=fire&region=kanto"
+        ^                                                            ^
+        quote here                                       and here
+
+Your mission (step by step):
+
+  1. Fetch all Fire-type Pokémon
+     Example: /pokemon/search?type=fire
+
+  2. Fetch Pokémon that are either Water OR Grass type
+     (Hint: repeat the same key: ?type=water&type=grass)
+
+  3. Fetch Pokémon that are Electric type AND from the Kanto region
+
+  4. Fetch Pokémon with the role "special attacker"
+     (Spaces must be encoded properly — use + or %20)
+
+  5. Fetch Pokémon sorted by base_stat in descending order
+
+  6. Final challenge:
+     Combine everything —
+       - type = fire OR grass
+       - region = kanto
+       - role = special attacker
+       - sort = base_stat_desc
+
+     Construct the full query. The results will be sorted strongest first.
+
+  7. Submit the name of the 2nd Pokémon in that result.
+"""
+
+hint = """# 1. Fire types
+curl "http://localhost:8080/pokemon/search?type=fire"
+
+# 2. Water OR Grass (repeat the key — quote the URL so & isn't eaten by the shell)
+curl "http://localhost:8080/pokemon/search?type=water&type=grass"
+
+# 3. Electric AND Kanto
+curl "http://localhost:8080/pokemon/search?type=electric&region=kanto"
+
+# 4. Role with encoded space
+curl "http://localhost:8080/pokemon/search?role=special+attacker"
+
+# 5. Sort by base_stat descending
+curl "http://localhost:8080/pokemon/search?sort=base_stat_desc"
+
+# 6. Final combined query
+curl "http://localhost:8080/pokemon/search?type=fire&type=grass&region=kanto&role=special+attacker&sort=base_stat_desc\""""
+
+submit_prompt = "What is the name of the 2nd Pokémon in the final combined query result?"
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS pokemon (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type TEXT, region TEXT, role TEXT, base_stat INTEGER)",
+
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Charizard', 'fire', 'kanto', 'special attacker', 534)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Blastoise', 'water', 'kanto', 'tank', 530)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Venusaur', 'grass', 'kanto', 'support', 525)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Pikachu', 'electric', 'kanto', 'special attacker', 320)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Infernape', 'fire', 'sinnoh', 'physical attacker', 534)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Sceptile', 'grass', 'hoenn', 'special attacker', 530)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Arcanine', 'fire', 'kanto', 'physical attacker', 555)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Ninetales', 'fire', 'kanto', 'special attacker', 505)",
+    "INSERT INTO pokemon (name, type, region, role, base_stat) VALUES ('Victreebel', 'grass', 'kanto', 'special attacker', 490)"
+]
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["Ninetales"]
+error = "That's not quite right. Make sure you combined all filters, used comma-separated types, encoded the space in 'special attacker', and look at the 2nd result."
+

@@ -1,0 +1,72 @@
+id = 5
+title = "Payslip Uploader"
+instructions = """
+Real APIs rarely deal with just text. File uploads power everything from
+profile pictures to document processing. When responses are large — reports,
+exports, payslips — you don't want them dumped to your terminal. You save them.
+
+Two curl flags make this possible:
+
+  -o <filename>
+      Save the response body into a local file instead of printing it.
+      Essential when the response is large or binary.
+
+  -F "field=@filename"
+      Send a file as a multipart form upload — the same mechanism
+      browsers use when you pick a file in a form.
+
+---
+
+Base URL: http://localhost:8080
+
+Endpoints:
+  GET  /files/payslip          — Download the (faulty) annual payslip
+  GET  /files/correct-payslip  — Download the corrected payslip
+  POST /payslips               — Upload a payslip file
+  PUT  /payslips               — Replace with the corrected file
+
+---
+
+Your mission:
+
+  1. Download the payslip (JSON format) and save it as a .json file locally
+
+  2. Upload that .json file to the server using multipart form upload
+
+  3. Read the server's response carefully — it will point out a mistake
+
+  4. Download the corrected payslip (also JSON) and save it locally
+
+  5. Fix the record on the server using PUT with the corrected .json file
+"""
+hint = """# 1. Download the faulty payslip
+curl -o payslip.json http://localhost:8080/files/payslip
+
+# 2. Upload it
+curl -X POST -F "file=@payslip.json" http://localhost:8080/payslips
+
+# 3. Read the warning in the response — spot the mistake
+
+# 4. Download the corrected payslip
+curl -o correct_payslip.json http://localhost:8080/files/correct-payslip
+
+# 5. Fix it
+curl -X PUT -F "file=@correct_payslip.json" http://localhost:8080/payslips"""
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS payslips (id INTEGER PRIMARY KEY AUTOINCREMENT, month TEXT UNIQUE NOT NULL, salary INTEGER NOT NULL)"
+]
+
+[server]
+port = 8080
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM payslips"
+expected = "12"
+error = "Expected 12 monthly entries. Upload the payslip first: curl -X POST -F \"file=@payslip.json\" http://localhost:8080/payslips"
+
+[[verify.checks]]
+sql = "SELECT salary FROM payslips WHERE month = 'March'"
+expected = "5200"
+error = "March salary is still wrong. Correct it with: curl -X PUT -F \"file=@correct_payslip.json\" http://localhost:8080/payslips"
