@@ -192,7 +192,16 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     lines.push(Line::from(spans));
 
     // Scroll so the bottom (live input) is always visible, accounting for user scroll_offset.
-    let total_lines = lines.len() as u16;
+    let inner_w = inner.width.max(1) as usize;
+    let total_lines: u16 = lines.iter().map(|line| {
+        let len = line.width();
+        if len == 0 {
+            1
+        } else {
+            ((len.saturating_sub(1) / inner_w) + 1) as u16
+        }
+    }).sum();
+    
     let visible = inner.height;
     let max_scroll = total_lines.saturating_sub(visible);
     qv.max_terminal_scroll.set(max_scroll as usize);
@@ -202,7 +211,8 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
     frame.render_widget(
         Paragraph::new(lines)
             .block(block)
-            .scroll((scroll, qv.h_scroll_offset as u16)),
+            .wrap(Wrap { trim: false })
+            .scroll((scroll, 0)),
         area,
     );
 
