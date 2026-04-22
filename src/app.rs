@@ -240,6 +240,7 @@ impl App {
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
+        let _ = crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture);
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
             self.handle_events()?;
@@ -248,6 +249,7 @@ impl App {
                 if self.exit { break; }
             }
         }
+        let _ = crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture);
         Ok(())
     }
 
@@ -257,6 +259,9 @@ impl App {
                 if key.kind == KeyEventKind::Press {
                     self.handle_key(key);
                 }
+            }
+            Event::Mouse(mouse) => {
+                self.handle_mouse(mouse);
             }
             _ => {}
         }
