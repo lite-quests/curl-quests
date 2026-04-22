@@ -237,6 +237,10 @@ impl App {
     fn cleanup_quest(&mut self) {
         self.stop_server();
         let _ = std::fs::remove_file(db::quest_db_path());
+        if let Some(qv) = &self.quest_view {
+            let env_file = format!("data/quest_{}_env.sh", qv.quest_id);
+            let _ = std::fs::remove_file(env_file);
+        }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -675,9 +679,14 @@ impl App {
         if cmd.is_empty() {
             return;
         }
-        let result = std::process::Command::new("sh")
+        let env_file = format!("data/quest_{}_env.sh", qv.quest_id);
+        let wrapper_cmd = format!(
+            "source {} 2>/dev/null\n{}\ncode=$?\ndeclare -p > {} 2>/dev/null\nexit $code",
+            env_file, cmd, env_file
+        );
+        let result = std::process::Command::new("bash")
             .arg("-c")
-            .arg(&cmd)
+            .arg(&wrapper_cmd)
             .output();
         let output = match result {
             Ok(out) => {
