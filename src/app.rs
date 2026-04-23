@@ -244,7 +244,6 @@ impl App {
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        let _ = crossterm::execute!(io::stdout(), crossterm::event::EnableMouseCapture);
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
             self.handle_events()?;
@@ -253,7 +252,6 @@ impl App {
                 if self.exit { break; }
             }
         }
-        let _ = crossterm::execute!(io::stdout(), crossterm::event::DisableMouseCapture);
         Ok(())
     }
 
@@ -808,7 +806,7 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
             },
             QuestFocus::Terminal => match key.code {
                 KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::Paste,
-                KeyCode::Char('y') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::CopyLastOutput,
+                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::CopyLastOutput,
                 KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordLeft,
                 KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordRight,
                 KeyCode::Char(c) => QuestAction::Insert(c),
