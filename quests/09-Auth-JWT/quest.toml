@@ -1,4 +1,4 @@
-id = 6
+id = 9
 title = "Identity & Access"
 instructions = """
 Most real APIs don't let just anyone in. They require you to prove who you are —
@@ -20,17 +20,18 @@ You pass it on every protected request like this:
 
   -H "Authorization: Bearer <your-token>"
 
----
+-----------------------------------------------------------------------------------
 
-A social profile API is running at http://localhost:8080.
+Your coworkers at the grocery store won’t stop talking about a new app called “BookFace”.
+Owing to peer pressure and FOMO, you decide to make an account and add a few coworkers but you do it via cURL cuz you're cool like that.
 
-Endpoints:
+Base URL: http://localhost:8080
+
+Available endpoints:
   POST /signup    — Create your account
   POST /login     — Authenticate and receive a JWT
   GET  /profile   — View your profile (JWT required)
   PUT  /friends   — Add friends to your profile (JWT required)
-
----
 
 Your mission:
 
@@ -43,7 +44,9 @@ Your mission:
   4. Use the token to PUT /friends — add at least 2 friends
 
   5. GET /profile again to confirm your friends appear, then submit the quest
+-----------------------------------------------------------------------------------
 """
+
 hint = """# 1. Sign up
 curl -s -X POST -H "Content-Type: application/json" \\
      -d '{"username":"curl-quest","password":"hello123"}' \\

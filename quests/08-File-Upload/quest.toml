@@ -1,4 +1,4 @@
-id = 5
+id = 8
 title = "Payslip Uploader"
 instructions = """
 Real APIs rarely deal with just text. File uploads power everything from
@@ -15,17 +15,19 @@ Two curl flags make this possible:
       Send a file as a multipart form upload — the same mechanism
       browsers use when you pick a file in a form.
 
----
+-----------------------------------------------------------------------------------
+
+You've now been given access to the payroll dashboard. At the end of every 
+month, employee payslips are generated as files and uploaded to the system. 
+But this time, something went wrong.
 
 Base URL: http://localhost:8080
 
-Endpoints:
-  GET  /files/payslip          — Download the (faulty) annual payslip
-  GET  /files/correct-payslip  — Download the corrected payslip
-  POST /payslips               — Upload a payslip file
-  PUT  /payslips               — Replace with the corrected file
-
----
+Available endpoints:
+  GET  /files/payslip         — Download the (faulty) annual payslip
+  GET  /files/correct-payslip — Download the corrected payslip
+  POST /payslips              — Upload a payslip file
+  PUT  /payslips              — Replace with the corrected file
 
 Your mission:
 
@@ -38,7 +40,9 @@ Your mission:
   4. Download the corrected payslip (also JSON) and save it locally
 
   5. Fix the record on the server using PUT with the corrected .json file
+-----------------------------------------------------------------------------------
 """
+
 hint = """# 1. Download the faulty payslip
 curl -o payslip.json http://localhost:8080/files/payslip
 
