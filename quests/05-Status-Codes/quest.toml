@@ -1,0 +1,60 @@
+id = 5
+title = "The Galactic Relay"
+instructions = """
+The Status Code Map:
+- 1xx (Informational): "Hold on..." (Request received).
+- 2xx (Success): "All good!" (Request worked).
+- 3xx (Redirection): "Go over there!" (The resource moved).
+- 4xx (Client Error): "You messed up!" (Your request is invalid).
+- 5xx (Server Error): "I messed up!" (The server has a problem).
+
+-----------------------------------------------------------------------------------
+
+You were just enjoying your totally-not-stolen discount…
+…and everything glitches.
+
+Turns out: You broke a galactic relay system. Nice.
+
+Now the relay only speaks in HTTP Status Codes.
+Fix it before things get worse.
+
+Base URL: http://localhost:8080
+
+Available endpoints:
+  GET  /satellite          — The legacy relay endpoint
+  GET  /v2/satellite       — The new relay endpoint
+
+Your mission:
+1. Find the Relay: The old endpoint `/satellite` is deprecated. Use `curl -i` to see where it moved.
+2. Identify Yourself: Once you find the new path, you'll likely hit a 4xx error. You need to provide the header `X-Repair-Key: RED_LEADER`.
+3. Bypass the Glitch: The station is currently returning a 503 Service Unavailable. Read the response body to find the bypass header.
+4. Recover the Code: When you finally get a 200 OK, the system will return the final repair code.
+-----------------------------------------------------------------------------------
+"""
+
+hint = """1. Check the move (Look for 'Location' header)
+curl -i http://localhost:8080/satellite
+
+2. Use the new URL and add the key
+curl -i -H "X-Repair-Key: RED_LEADER" http://localhost:8080/v2/satellite
+
+3. If it's a 503, check the body! It will ask for: -H "X-Bypass: true"
+curl -i -H "X-Repair-Key: RED_LEADER" -H "X-Bypass: true" http://localhost:8080/v2/satellite"""
+submit_prompt = "Enter the Repair Code (found in the 200 OK response body):"
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS systems (id INTEGER PRIMARY KEY, name TEXT, status TEXT)",
+]
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["GALAXY_FIXED_2024"]
+error = "Incorrect Repair Code. Check the response body of your successful 200 OK request!"
+
+[[verify.checks]]
+sql = "SELECT COUNT() FROM systems WHERE name = 'Galactic Relay' AND status = 'online'"
+expected = "1"
+error = "The relay hasn't been brought back online yet. Keep iterating until you get that 200 OK status!"
