@@ -1,0 +1,81 @@
+id = 4
+title = "The Manager's Secret"
+
+instructions = """
+Headers aren't just sent with requests — they come back in responses too.
+And sometimes, the real secrets are hiding there.
+
+To inspect responses, use:
+
+1. -i
+   Show response headers + body.
+
+2. -I
+   Headers only (skip massive responses).
+
+3. -v
+   Full request/response debug view:
+   - '>' → what you send
+   - '<' → what the server sends back
+
+4. -A "Your Disguise"
+   Change your User-Agent (pretend to be your manager)
+
+-----------------------------------------------------------------------------------
+
+As you might've inferred from the previous quest, you work at a grocery store. 
+
+Work is not very eventful but you overheard your colleagues gossiping about the 
+company recently introducing special discount coupons for the managers. It 
+would be great if you could get your hands on one of those.
+
+Base URL: http://localhost:8080
+
+Available endpoints:
+  GET  /employee-portal                  — Employee portal
+  GET  /staff-inventory?token=YOUR_TOKEN — Staff inventory
+  GET  /manager-vault?token=YOUR_TOKEN   — Manager vault
+
+Your mission:
+
+1. Intercept the Portal
+   Visit /employee-portal
+   → Find the X-Manager-Token in the headers
+
+2. Scan the Inventory
+   Use the manager token on /staff-inventory
+   → The response is HUGE (10,000 lines)
+   → Use -I to avoid the chaos
+   → Find X-Required-Device
+
+3. Impersonate the Boss
+   Change your User-Agent to match the manager's work device
+   → Use -A
+   → Visit /manager-vault with the token
+
+4. Steal the Coupon
+   Look in the response headers
+   → Find X-Ultimate-Coupon
+
+Submit it. Enjoy your illegal discount.
+-----------------------------------------------------------------------------------
+"""
+
+hint = """# 1. Intercept the Employee Portal
+curl -i http://localhost:8080/employee-portal
+
+# 2. Scan Staff Inventory (skip the 10,000 lines)
+curl -I "http://localhost:8080/staff-inventory?token=Manager-Access-99"
+
+# 3. Become the Boss
+curl -v -A "The-Bosses-iPad" "http://localhost:8080/manager-vault?token=Manager-Access-99"
+# Look for X-Ultimate-Coupon in headers!"""
+
+submit_prompt = "Enter the X-Ultimate-Coupon code:"
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["ULTIMATE_99_OFF"]
+error = "Incorrect. Did you impersonate the boss correctly and extract the X-Ultimate-Coupon?"
