@@ -70,7 +70,11 @@ fn count_wrapped_lines(text: &str, width: u16) -> u16 {
     let w = width.max(1) as usize;
     for line in text.lines() {
         let len = line.chars().count();
-        count += (len / w) as u16 + 1;
+        if len == 0 {
+            count += 1;
+        } else {
+            count += ((len - 1) / w) as u16 + 1;
+        }
     }
     count
 }
