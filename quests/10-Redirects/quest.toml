@@ -1,0 +1,59 @@
+id = 10
+title = "The Digital Detour"
+instructions = """
+URLs aren't always permanent. Sometimes a resource moves to a new home. When this happens, the server sends back a **Redirection** status code (like `301 Moved Permanently` or `302 Found`) along with a `Location` header pointing to the new address.
+
+By default, `curl` will show you the redirection message but will **not** follow it. To tell `curl` to automatically follow the trail to the final destination, you must use the `-L` (location) flag.
+
+-----------------------------------------------------------------------------------
+
+While working with the store’s internal systems, you decide to dig into some archived data. You stumble upon a legacy endpoint that has been migrated to a new secure system.
+
+Base URL: http://localhost:8080
+
+Available endpoints:
+  GET  /old-archive      — The legacy location (Redirects to new vault)
+  GET  /new-secure-vault — The new destination
+
+Your mission:
+
+1. Encounter the Detour
+   Try to fetch the old archive using `curl http://localhost:8080/old-archive`.
+   Notice the 301 status. To see *where* it's moving, try adding the `-i` flag to inspect the headers and look for the `Location` field.
+
+2. Follow the Trail
+   Use the `-L` flag to tell `curl` to automatically follow all redirects until it hits a final 200 OK response.
+
+3. Retrieve the Code
+   Once you reach the final destination, you'll see the 'Archive Access Code'.
+
+---
+
+Pro Tip: You can combine `-i` and `-L` to see the entire chain of headers as `curl` hops from one URL to the next!
+-----------------------------------------------------------------------------------
+"""
+
+hint = """# 1. See the redirect message
+curl http://localhost:8080/old-archive
+
+# 2. Inspect headers to find the 'Location'
+curl -i http://localhost:8080/old-archive
+
+# 3. Follow the trail to the final destination
+curl -L http://localhost:8080/old-archive"""
+
+submit_prompt = "What is the Archive Access Code?"
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS system_logs (id INTEGER PRIMARY KEY, message TEXT)",
+    "INSERT INTO system_logs (message) VALUES ('Redirect quest initialized')"
+]
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["FOLLOW_THE_LIGHT_99"]
+error = "You didn't reach the final destination. Did you use the -L flag to follow the redirect?"
+
