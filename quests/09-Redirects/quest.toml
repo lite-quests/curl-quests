@@ -1,4 +1,4 @@
-id = 10
+id = 9
 title = "The Digital Detour"
 instructions = """
 URLs aren't always permanent. Sometimes a resource moves to a new home. When this happens, the server sends back a **Redirection** status code (like `301 Moved Permanently` or `302 Found`) along with a `Location` header pointing to the new address.
