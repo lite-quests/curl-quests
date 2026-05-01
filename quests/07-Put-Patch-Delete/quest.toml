@@ -1,0 +1,82 @@
+id = 7
+title = "Data Janitor"
+instructions = """
+Real-world data isn't static. Sometimes you need to fix a mistake or remove old records entirely. This is done using the `PUT`, `PATCH`, and `DELETE` methods.
+
+In a RESTful API:
+- `PUT` is used to replace a resource entirely.
+- `PATCH` is used to update only specific parts of a resource.
+- `DELETE` is used to remove a resource.
+
+-----------------------------------------------------------------------------------
+
+Today is day-2 of your training at the grocery store and you've been assigned 
+the responsibility of maintaining the store's inventory.
+
+Base URL: http://localhost:8080
+
+Available endpoints:
+  GET    /inventory        — List all items in the inventory
+  PATCH  /inventory/:id    — Update item fields (e.g., {"name": "New Name", "price": 2.50})
+  PUT    /inventory/:id    — Replace item entirely
+  DELETE /inventory/:id    — Remove item
+
+Your mission:
+
+1. Inspect the inventory
+   Fetch the current inventory list using `GET /inventory` to see what needs fixing.
+
+2. Fix the typo
+   Item #1 says "Organic Banannas" ($0.99). It should be "Organic Bananas". 
+   Use `PATCH` to fix just the name.
+
+3. Replace the outdated item
+   Item #2 "Out of stock Watermelon" ($0.00) is no longer accurate.
+   Replace it entirely with "In stock Watermelon" at $5.00 using `PUT`.
+
+4. Delete the junk
+   Item #3 is just "asdfghjkl" — someone was testing the keyboard.
+   Use `DELETE` to remove it from the system.
+
+
+Remember: `PATCH` and `PUT` usually require a JSON body (`-d '{"name": "...", "price": 0.00}'`) and the `Content-Type: application/json` header.
+-----------------------------------------------------------------------------------
+"""
+
+hint = """# 1. Fetch the list to see the inventory
+curl -s http://localhost:8080/inventory
+
+# 2. Fix the typo (PATCH)
+curl -s -X PATCH -H "Content-Type: application/json" -d '{"name":"Organic Bananas"}' http://localhost:8080/inventory/1
+
+# 3. Replace the item (PUT)
+curl -s -X PUT -H "Content-Type: application/json" -d '{"name":"In stock Watermelon", "price": 5.00}' http://localhost:8080/inventory/2
+
+# 4. Delete the junk (DELETE)
+curl -s -X DELETE http://localhost:8080/inventory/3"""
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS inventory (id INTEGER PRIMARY KEY, name TEXT, price REAL)",
+    "INSERT OR IGNORE INTO inventory (id, name, price) VALUES (1, 'Organic Banannas', 0.99)",
+    "INSERT OR IGNORE INTO inventory (id, name, price) VALUES (2, 'Out of stock Watermelon', 0.00)",
+    "INSERT OR IGNORE INTO inventory (id, name, price) VALUES (3, 'asdfghjkl', 0.00)",
+]
+
+[server]
+port = 8080
+
+[[verify.checks]]
+sql = "SELECT name FROM inventory WHERE id = 1"
+expected = "Organic Bananas"
+error = "Item #1 still says 'Organic Banannas'. Did you PATCH it correctly?"
+
+[[verify.checks]]
+sql = "SELECT price FROM inventory WHERE id = 2"
+expected = "5.0"
+error = "Item #2 was not replaced. Did you use PUT with the correct price?"
+
+[[verify.checks]]
+sql = "SELECT COUNT(*) FROM inventory WHERE id = 3"
+expected = "0"
+error = "Item #3 still exists. You need to DELETE it!"
