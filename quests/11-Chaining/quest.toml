@@ -1,0 +1,92 @@
+id = 11
+title = "The Automation Architect"
+instructions = """
+In real-world development, you rarely make just one API request.
+Most tasks involve multiple steps — where the output of one request becomes the input for the next. This is called **request chaining**.
+While you can do this manually, it quickly becomes tedious. That’s why developers use tools like `curl`, `jq` (for working with JSON), and shell variables to automate the process and save time.
+
+-----------------------------------------------------------------------------------
+
+You need to access the Store HR System's secure vault, but you don't have the required access key. Fortunately, your colleague Alice does. You'll need to look up her employee profile and borrow her key to get in.
+
+Base URL: http://localhost:8080
+
+Available endpoints:
+  GET  /users           — List all employees in the system
+  GET  /profiles/<uuid> — Access a specific employee's profile
+  GET  /vault           — The Store HR System secure vault (requires X-Access-Key)
+
+Your mission:
+
+1. Find Alice's UUID
+   Fetch the list of users and find the unique `uuid` associated with "Alice".
+
+2. Extract the Access Key
+   Visit Alice's profile using her UUID. In the response, look for the `access_key`.
+
+3. Unlock the Vault
+   The vault is protected. Send a GET request to `/vault` while passing the access key in the `X-Access-Key` header.
+
+4. Submit the Secret Token
+   Once the vault is unlocked, it will reveal the final `secret_token`.
+
+The Pro Way: Automation & Piping
+
+Manually copy-pasting is fine for one-off tasks, but what if you had to do this 100 times? This is where **piping** comes in. 
+
+The pipe operator (`|`) takes the output of the command on its left and feeds it directly into the command on its right. Think of it like a plumbing pipe moving water from one station to the next.
+
+For example, instead of saving a JSON response to a file to read it, you can "pipe" the `curl` output directly into a tool like `jq` (a terminal JSON processor) to filter it instantly:
+
+```bash
+# 1. 'curl' fetches the raw JSON data
+# 2. The pipe '|' connects the commands
+# 3. 'jq' receives the data and filters it to find Alice's UUID
+curl -s http://localhost:8080/users | jq -r '.[] | select(.name=="Alice") | .uuid'
+```
+
+To build a full automation chain, you can capture that piped output into a **variable** using `$()`, and then inject that variable into your next `curl` request:
+
+```bash
+# Step 1: Extract Alice's UUID and store it in the $ID variable
+ID=$(curl -s http://localhost:8080/users | jq -r '.[] | select(.name=="Alice") | .uuid')
+
+# Step 2: Use $ID in the URL, extract the access key, and store it in $KEY
+KEY=$(curl -s http://localhost:8080/profiles/$ID | jq -r .access_key)
+
+# Step 3: Inject $KEY into the header to unlock the vault
+curl -H "X-Access-Key: $KEY" http://localhost:8080/vault
+```
+
+*Note: If you don't have `jq` installed, you can still complete this quest by manually copy-pasting the values! But look at how powerful that pipeline is.*
+-----------------------------------------------------------------------------------
+"""
+
+hint = """# 1. Fetch users and find Alice's UUID
+curl -s http://localhost:8080/users
+
+# 2. Get the access key from her profile (Replace <UUID> with the actual ID)
+curl -s http://localhost:8080/profiles/<UUID>
+
+# 3. Unlock the vault using the header
+curl -s -H "X-Access-Key: <ACCESS_KEY>" http://localhost:8080/vault"""
+
+submit_prompt = "Enter the 'secret_token' found inside the vault:"
+
+[setup]
+seed = [
+    "CREATE TABLE IF NOT EXISTS users (uuid TEXT PRIMARY KEY, name TEXT)",
+    "INSERT INTO users (uuid, name) VALUES ('550e8400-e29b-41d4-a716-446655440000', 'Bob')",
+    "INSERT INTO users (uuid, name) VALUES ('7d3a2b1c-9e8f-4d5a-bc6d-1a2b3c4d5e6f', 'Alice')",
+    "INSERT INTO users (uuid, name) VALUES ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Charlie')",
+    "INSERT INTO users (uuid, name) VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d4e5', 'Dana')",
+    "INSERT INTO users (uuid, name) VALUES ('2e3a4b5c-6d7e-8f9a-0b1c-2d3e4f5a6b7c', 'Eve')",
+]
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["PIPELINE_MASTER_88"]
+error = "Incorrect token. Ensure you followed the full chain: Find Alice -> Get Access Key -> Unlock Vault."
+
