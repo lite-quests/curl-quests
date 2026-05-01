@@ -20,10 +20,12 @@ You pass it on every protected request like this:
 
   -H "Authorization: Bearer <your-token>"
 
------------------------------------------------------------------------------------
+---
 
-Your coworkers at the grocery store won’t stop talking about a new app called “BookFace”.
-Owing to peer pressure and FOMO, you decide to make an account and add a few coworkers but you do it via cURL cuz you're cool like that.
+Briefing:
+Your coworkers at the grocery store won’t stop talking about a new app called
+“BookFace”. Owing to peer pressure and FOMO, you decide to make an account and
+add a few coworkers but you do it via cURL cuz you're cool like that.
 
 Base URL: http://localhost:8080
 
@@ -34,17 +36,14 @@ Available endpoints:
   PUT  /friends   — Add friends to your profile (JWT required)
 
 Your mission:
+  1. Sign up with username "curl-quest" and a 6-12 character password.
+  2. Log in — the server will return a JWT token.
+  3. Use the token to GET /profile and see your empty friends list.
+  4. Use the token to PUT /friends to add at least 2 friends.
+  5. GET /profile again to confirm your friends appear.
 
-  1. Sign up with username "curl-quest" and a password you choose (6–12 characters)
-
-  2. Log in — the server will return a JWT token and explain what's inside it
-
-  3. Use the token to GET /profile — you will see your username and an empty friends list
-
-  4. Use the token to PUT /friends — add at least 2 friends
-
-  5. GET /profile again to confirm your friends appear, then submit the quest
------------------------------------------------------------------------------------
+---
+  
 """
 
 hint = """# 1. Sign up

@@ -1,36 +1,38 @@
 id = 9
 title = "The Digital Detour"
 instructions = """
-URLs aren't always permanent. Sometimes a resource moves to a new home. When this happens, the server sends back a **Redirection** status code (like `301 Moved Permanently` or `302 Found`) along with a `Location` header pointing to the new address.
+URLs aren't always permanent. Sometimes a resource moves. When this
+happens, the server sends a Redirection status code (like 301 or 302)
+along with a `Location` header pointing to the new address.
 
-By default, `curl` will show you the redirection message but will **not** follow it. To tell `curl` to automatically follow the trail to the final destination, you must use the `-L` (location) flag.
+By default, `curl` will show the redirect message but NOT follow it.
+To tell `curl` to automatically follow the trail, use the `-L` flag.
 
------------------------------------------------------------------------------------
+---
 
-While working with the store’s internal systems, you decide to dig into some archived data. You stumble upon a legacy endpoint that has been migrated to a new secure system.
+Briefing:
+While working with the store’s systems, you stumble upon a legacy
+endpoint that has been migrated to a new secure system.
 
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /old-archive      — The legacy location (Redirects to new vault)
+  GET  /old-archive      — The legacy location
   GET  /new-secure-vault — The new destination
 
 Your mission:
+  1. Encounter the Detour: Try fetching `/old-archive`. Notice the
+     301 status. Use `-i` to find the `Location` field in headers.
+  2. Follow the Trail: Use `-L` to tell `curl` to automatically
+     follow all redirects until it hits the final 200 OK.
+  3. Retrieve the Code: At the final destination, you'll find the
+     'Archive Access Code'.
 
-1. Encounter the Detour
-   Try to fetch the old archive using `curl http://localhost:8080/old-archive`.
-   Notice the 301 status. To see *where* it's moving, try adding the `-i` flag to inspect the headers and look for the `Location` field.
-
-2. Follow the Trail
-   Use the `-L` flag to tell `curl` to automatically follow all redirects until it hits a final 200 OK response.
-
-3. Retrieve the Code
-   Once you reach the final destination, you'll see the 'Archive Access Code'.
+Pro Tip: Combine `-i` and `-L` to see the entire chain of headers as
+`curl` hops from one URL to the next!
 
 ---
 
-Pro Tip: You can combine `-i` and `-L` to see the entire chain of headers as `curl` hops from one URL to the next!
------------------------------------------------------------------------------------
 """
 
 hint = """# 1. See the redirect message

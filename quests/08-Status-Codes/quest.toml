@@ -1,15 +1,20 @@
 id = 8
 title = "The Galactic Relay"
 instructions = """
+Every HTTP response starts with a Status Code. These three-digit
+numbers are the server's way of telling you exactly what happened
+without you having to read the entire response body.
+
 The Status Code Map:
-- 1xx (Informational): "Hold on..." (Request received).
-- 2xx (Success): "All good!" (Request worked).
-- 3xx (Redirection): "Go over there!" (The resource moved).
-- 4xx (Client Error): "You messed up!" (Your request is invalid).
-- 5xx (Server Error): "I messed up!" (The server has a problem).
+- 1xx (Informational): "Hold on..." (Request received)
+  - 2xx (Success): "All good!" (Request worked)
+  - 3xx (Redirection): "Go over there!" (The resource moved)
+  - 4xx (Client Error): "You messed up!" (Your request is invalid)
+  - 5xx (Server Error): "I messed up!" (The server has a problem)
 
------------------------------------------------------------------------------------
+---
 
+Briefing:
 You were just enjoying your totally-not-stolen discount…
 …and everything glitches.
 
@@ -25,13 +30,18 @@ Available endpoints:
   GET  /v2/satellite       — The new relay endpoint
 
 Your mission:
-1. Find the Relay: The old endpoint `/satellite` is deprecated. Use `curl -i` to see where it moved.
-2. Identify Yourself: Once you find the new path, you'll likely hit a 4xx error. You need to provide the header `X-Repair-Key: RED_LEADER`.
-3. Bypass the Glitch: The station is currently returning a 503 Service Unavailable. Read the response body to find the bypass header.
-4. Recover the Code: When you finally get a 200 OK, the system will return the final repair code.
------------------------------------------------------------------------------------
-"""
+  1. Find the Relay: The endpoint `/satellite` is deprecated. Use
+     `curl -i` to see where it moved (look for the Location header).
+  2. Identify Yourself: Once you find the new path, provide the
+     header `X-Repair-Key: RED_LEADER`.
+  3. Bypass the Glitch: The station might return 503 Service
+     Unavailable. Read the body to find the required bypass header.
+  4. Recover the Code: When you get a 200 OK, the repair code will
+     be in the response body.
 
+---
+
+"""
 hint = """1. Check the move (Look for 'Location' header)
 curl -i http://localhost:8080/satellite
 

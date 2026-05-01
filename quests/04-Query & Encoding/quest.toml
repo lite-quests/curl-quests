@@ -1,11 +1,11 @@
 id = 4
 title = "The Elemental Search"
 instructions = """
-Search, filter, sort, paginate — query parameters are how APIs let you ask
-for exactly what you need instead of dumping everything. They live in the URL
-after a ?, and every character matters. Spaces, special characters, and
-reserved symbols must be URL-encoded or the server won't understand them.
-This is one of the most common sources of bugs when working with APIs.
+Search, filter, sort, paginate — query parameters are how APIs let you
+ask for exactly what you need instead of dumping everything. They live
+in the URL after a ?, and every character matters. Spaces, special
+characters, and reserved symbols must be URL-encoded or the server
+won't understand them.
 
 Important: always wrap URLs in double quotes in your terminal.
 Without quotes, the shell treats & as a background operator and
@@ -15,9 +15,11 @@ strips everything after it — your filters will silently disappear.
         ^                                                            ^
         quote here                                       and here
 
------------------------------------------------------------------------------------
+---
 
-After a long day of work at the grocery store, you open your favorite Pokémon game. Professor Oak has built a Pokémon search API. You can filter Pokémon using query parameters.
+Briefing:
+After a long day of work at the grocery store, you open your favorite Pokémon game. 
+Professor Oak has built a Pokémon search API. You can filter Pokémon using query parameters.
 
 Base URL: http://localhost:8080
 
@@ -25,22 +27,14 @@ Available endpoints:
   GET  /pokemon/search     — Search for Pokémon
 
 Your mission:
-
   1. Fetch all Fire-type Pokémon
-     Example: /pokemon/search?type=fire
-
   2. Fetch Pokémon that are either Water OR Grass type
      (Hint: repeat the same key: ?type=water&type=grass)
-
   3. Fetch Pokémon that are Electric type AND from the Kanto region
-
   4. Fetch Pokémon with the role "special attacker"
      (Spaces must be encoded properly — use + or %20)
-
   5. Fetch Pokémon sorted by base_stat in descending order
-
-  6. Final challenge:
-     Combine everything —
+  6. Final challenge: Combine everything —
        - type = fire OR grass
        - region = kanto
        - role = special attacker
@@ -49,7 +43,9 @@ Your mission:
      Construct the full query. The results will be sorted strongest first.
 
   7. Submit the name of the 2nd Pokémon in that result.
------------------------------------------------------------------------------------
+
+---
+
 """
 
 hint = """# 1. Fire types
@@ -68,7 +64,8 @@ curl "http://localhost:8080/pokemon/search?role=special+attacker"
 curl "http://localhost:8080/pokemon/search?sort=base_stat_desc"
 
 # 6. Final combined query
-curl "http://localhost:8080/pokemon/search?type=fire&type=grass&region=kanto&role=special+attacker&sort=base_stat_desc\""""
+curl "http://localhost:8080/pokemon/search?type=fire&type=grass&region=kanto&role=special+attacker&sort=base_stat_desc"
+"""
 
 submit_prompt = "What is the name of the 2nd Pokémon in the final combined query result?"
 

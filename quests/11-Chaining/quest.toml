@@ -1,42 +1,41 @@
 id = 11
 title = "The Automation Architect"
 instructions = """
-In real-world development, you rarely make just one API request.
-Most tasks involve multiple steps — where the output of one request becomes the input for the next. This is called **request chaining**.
-While you can do this manually, it quickly becomes tedious. That’s why developers use tools like `curl`, `jq` (for working with JSON), and shell variables to automate the process and save time.
+In real-world development, you rarely make just one API request. Most
+tasks involve multiple steps — where the output of one request becomes
+the input for the next. This is called request chaining.
 
------------------------------------------------------------------------------------
+---
 
-You need to access the Store HR System's secure vault, but you don't have the required access key. Fortunately, your colleague Alice does. You'll need to look up her employee profile and borrow her key to get in.
+Briefing:
+You need to access the Store HR System's secure vault. You'll need to
+look up Alice's employee profile and borrow her access key to get in.
 
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /users           — List all employees in the system
+  GET  /users           — List all employees
   GET  /profiles/<uuid> — Access a specific employee's profile
-  GET  /vault           — The Store HR System secure vault (requires X-Access-Key)
+  GET  /vault           — Secure vault (requires X-Access-Key)
 
 Your mission:
-
-1. Find Alice's UUID
-   Fetch the list of users and find the unique `uuid` associated with "Alice".
-
-2. Extract the Access Key
-   Visit Alice's profile using her UUID. In the response, look for the `access_key`.
-
-3. Unlock the Vault
-   The vault is protected. Send a GET request to `/vault` while passing the access key in the `X-Access-Key` header.
-
-4. Submit the Secret Token
-   Once the vault is unlocked, it will reveal the final `secret_token`.
+  1. Find Alice's UUID from the list of users.
+  2. Visit Alice's profile using her UUID and find the access_key.
+  3. Send a GET request to /vault with the access key in the
+     X-Access-Key header to reveal the final secret_token.
 
 The Pro Way: Automation & Piping
 
-Manually copy-pasting is fine for one-off tasks, but what if you had to do this 100 times? This is where **piping** comes in. 
+Manually copy-pasting is fine for one-off tasks, but what if you had 
+to do this 100 times? This is where piping comes in.
 
-The pipe operator (`|`) takes the output of the command on its left and feeds it directly into the command on its right. Think of it like a plumbing pipe moving water from one station to the next.
+The pipe operator (|) takes the output of the command on its left 
+and feeds it directly into the command on its right. Think of it like 
+a plumbing pipe moving water from one station to the next.
 
-For example, instead of saving a JSON response to a file to read it, you can "pipe" the `curl` output directly into a tool like `jq` (a terminal JSON processor) to filter it instantly:
+For example, instead of saving a JSON response to a file to read it, 
+you can "pipe" the curl output directly into a tool like `jq` (a 
+terminal JSON processor) to filter it instantly:
 
 ```bash
 # 1. 'curl' fetches the raw JSON data
@@ -45,7 +44,9 @@ For example, instead of saving a JSON response to a file to read it, you can "pi
 curl -s http://localhost:8080/users | jq -r '.[] | select(.name=="Alice") | .uuid'
 ```
 
-To build a full automation chain, you can capture that piped output into a **variable** using `$()`, and then inject that variable into your next `curl` request:
+To build a full automation chain, you can capture that piped output 
+into a variable using `$()`, and then inject that variable into your 
+next `curl` request:
 
 ```bash
 # Step 1: Extract Alice's UUID and store it in the $ID variable
@@ -58,8 +59,12 @@ KEY=$(curl -s http://localhost:8080/profiles/$ID | jq -r .access_key)
 curl -H "X-Access-Key: $KEY" http://localhost:8080/vault
 ```
 
-*Note: If you don't have `jq` installed, you can still complete this quest by manually copy-pasting the values! But look at how powerful that pipeline is.*
------------------------------------------------------------------------------------
+Note: If you don't have `jq` installed, you can still complete this quest 
+by manually copy-pasting the values! But look at how powerful that 
+pipeline is.
+
+---
+
 """
 
 hint = """# 1. Fetch users and find Alice's UUID

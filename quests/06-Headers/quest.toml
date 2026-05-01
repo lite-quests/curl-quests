@@ -1,12 +1,12 @@
 id = 6
 title = "Strict API Contracts"
 instructions = """
-Headers are metadata that travel alongside every HTTP request and response.
-They tell the server who you are, what format you're sending, what you'll accept
-back, and more. Real-world APIs use headers for authentication (API keys, tokens),
-content negotiation, rate limiting, and versioning. Getting headers right is the
+Headers are metadata that travel alongside every HTTP request and
+response. They tell the server who you are, what format you're sending,
+what you'll accept back, and more. Getting headers right is the
 difference between a 200 and a 401.
 
+Briefing:
 The grocery API has been upgraded. It now enforces strict request rules.
 
 Base URL: http://localhost:8080
@@ -15,13 +15,10 @@ Base URL: http://localhost:8080
   POST /groceries          — Add an item
 
 New Requirements:
-
-1. ALL requests (GET and POST) MUST include:
-     -H "x-api-key: secret123"
-
-2. POST requests support multiple Content-Types:
-   - application/json
-   - application/x-www-form-urlencoded
+  1. ALL requests MUST include: -H "x-api-key: secret123"
+  2. POST requests support multiple Content-Types:
+     - application/json
+     - application/x-www-form-urlencoded
 
 3. The server behaves differently based on headers:
    - Missing API key → 401 Unauthorized
@@ -38,19 +35,19 @@ New Requirements:
 POST syntax examples:
 
 JSON request:
-  curl -s \
-       -X POST \
-       -H "x-api-key: secret123" \
-       -H "Content-Type: application/json" \
-       -d '{"name":"Butter"}' \
+  curl -s \\
+       -X POST \\
+       -H "x-api-key: secret123" \\
+       -H "Content-Type: application/json" \\
+       -d '{"name":"Butter"}' \\
        http://localhost:8080/groceries
 
 Form request:
-  curl -s \
-       -X POST \
-       -H "x-api-key: secret123" \
-       -H "Content-Type: application/x-www-form-urlencoded" \
-       -d "name=Apples" \
+  curl -s \\
+       -X POST \\
+       -H "x-api-key: secret123" \\
+       -H "Content-Type: application/x-www-form-urlencoded" \\
+       -d "name=Apples" \\
        http://localhost:8080/groceries
 
 ---
@@ -58,8 +55,8 @@ Form request:
 Your mission:
 
 1. Fetch the current grocery list (remember: API key required)
-2. Add "Butter" using JSON format
-3. Add "Apples" using form-urlencoded format
+  2. Add "Butter" using JSON format
+  3. Add "Apples" using form-urlencoded format
 4. Add "Bananas" using JSON format with the extra header: -H "Done: Success"
 5. Fetch the list again to confirm all items were added and submit the quest
 
@@ -67,6 +64,9 @@ Pay attention to:
 - headers (-H)
 - body format (-d)
 - server responses (status codes)
+
+---
+
 """
 hint = """# 1. Fetch the list (API key required on GET too)
 curl -s -H "x-api-key: secret123" http://localhost:8080/groceries

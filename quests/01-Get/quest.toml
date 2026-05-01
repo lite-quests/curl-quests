@@ -6,6 +6,9 @@ or checks for updates — it's making a GET request. GET is the most fundamental
 HTTP method: ask the server for something, get a response back. curl lets you
 do the same thing from your terminal, without a browser.
 
+---
+
+Briefing:
 A heroes database has been prepared with some initial heroes.
 A server is running at http://localhost:8080.
 
@@ -15,7 +18,11 @@ Available endpoints:
 Your mission:
   1. Fetch the list of heroes using a GET request
   2. Find the hero whose name starts with the letter 'L'
-  3. Type that hero's name in the answer box and submit"""
+  3. Type that hero's name in the answer box and submit
+
+---
+
+"""
 hint = "curl http://localhost:8080/heroes"
 
 submit_prompt = "Which hero's name starts with 'L'?"

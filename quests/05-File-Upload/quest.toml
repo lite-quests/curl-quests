@@ -1,9 +1,10 @@
 id = 5
 title = "Payslip Uploader"
 instructions = """
-Real APIs rarely deal with just text. File uploads power everything from
-profile pictures to document processing. When responses are large — reports,
-exports, payslips — you don't want them dumped to your terminal. You save them.
+Real APIs rarely deal with just text. File uploads power everything
+from profile pictures to document processing. When responses are large
+— reports, exports, payslips — you don't want them dumped to your
+terminal. You save them.
 
 Two curl flags make this possible:
 
@@ -15,10 +16,11 @@ Two curl flags make this possible:
       Send a file as a multipart form upload — the same mechanism
       browsers use when you pick a file in a form.
 
------------------------------------------------------------------------------------
+---
 
-You've now been given access to the payroll dashboard. At the end of every 
-month, employee payslips are generated as files and uploaded to the system. 
+Briefing:
+You've now been given access to the payroll dashboard. At the end of every
+month, employee payslips are generated as files and uploaded to the system.
 But this time, something went wrong.
 
 Base URL: http://localhost:8080
@@ -30,17 +32,15 @@ Available endpoints:
   PUT  /payslips              — Replace with the corrected file
 
 Your mission:
-
-  1. Download the payslip (JSON format) and save it as a .json file locally
-
-  2. Upload that .json file to the server using multipart form upload
-
-  3. Read the server's response carefully — it will point out a mistake
-
+  1. Download the payslip (JSON) and save it as a .json file locally
+  2. Upload that .json file using multipart form upload (-F)
+  3. Read the server's response carefully to spot the error
   4. Download the corrected payslip (also JSON) and save it locally
 
   5. Fix the record on the server using PUT with the corrected .json file
------------------------------------------------------------------------------------
+
+---
+
 """
 
 hint = """# 1. Download the faulty payslip
