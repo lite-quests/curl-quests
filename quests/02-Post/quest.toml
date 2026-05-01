@@ -1,5 +1,5 @@
 id = 2
-title = "Grocery Run"
+title = "Day 2: Adding Items"
 instructions = """
 GET only reads data. To create something — a new user, a comment, an order —
 you need POST. POST sends a body alongside the request, which is how you pass
@@ -9,55 +9,55 @@ Content-Type header is how you tell the server what format you're sending.
 ---
 
 Briefing:
-You came to your local grocery store to restock your supplies.
+Today is day-2 of your training where they teach you about how to add new items to the inventory.
 
-Your grocery list is running at http://localhost:8080.
+Your inventory system is running at http://localhost:8080.
 
-  GET  /groceries          — List all grocery items
-  POST /groceries          — Add an item (JSON: {"name": "..."})
+  GET  /inventory          — List all inventory items
+  POST /inventory          — Add an item (JSON: {"name": "..."})
 
 Tip — when running curl in a terminal you may see a progress bar.
 Use -s (silent) to suppress it and get clean output:
 
-  curl -s http://localhost:8080/groceries
+  curl -s http://localhost:8080/inventory
 
 POST syntax breakdown:
   curl -s                                    ← silent, no progress noise
        -X POST                               ← set the HTTP method
        -H "Content-Type: application/json"   ← tell the server it's JSON
        -d '{"name":"Butter"}'                ← the JSON body
-       http://localhost:8080/groceries
+       http://localhost:8080/inventory
 
 Your mission:
-  1. Fetch the current grocery list with a GET request
+  1. Fetch the current inventory list with a GET request
   2. Add "Butter" to the list with a POST request
-  3. Add "Apples" to the list with a POST request
+  3. Add "Oranges" to the list with a POST request
   4. Fetch the list again to confirm both were added
 
 ---
 
 """
-hint = """curl http://localhost:8080/groceries
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Butter"}' http://localhost:8080/groceries
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Apples"}' http://localhost:8080/groceries"""
+hint = """curl http://localhost:8080/inventory
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Butter"}' http://localhost:8080/inventory
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Oranges"}' http://localhost:8080/inventory"""
 
 [setup]
 seed = [
-    "CREATE TABLE IF NOT EXISTS groceries (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)",
-    "INSERT INTO groceries (name) VALUES ('Milk')",
-    "INSERT INTO groceries (name) VALUES ('Bread')",
-    "INSERT INTO groceries (name) VALUES ('Eggs')",
+    "CREATE TABLE IF NOT EXISTS inventory (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL)",
+    "INSERT INTO inventory (name) VALUES ('Apples')",
+    "INSERT INTO inventory (name) VALUES ('Bananas')",
+    "INSERT INTO inventory (name) VALUES ('Milk')",
 ]
 
 [server]
 port = 8080
 
 [[verify.checks]]
-sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Butter'"
+sql = "SELECT COUNT(*) FROM inventory WHERE name = 'Butter'"
 expected = "1"
-error = "Butter was not found in the grocery list. POST it with: -d '{\"name\":\"Butter\"}'"
+error = "Butter was not found in the inventory. POST it with: -d '{\"name\":\"Butter\"}'"
 
 [[verify.checks]]
-sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Apples'"
+sql = "SELECT COUNT(*) FROM inventory WHERE name = 'Oranges'"
 expected = "1"
-error = "Apples was not found in the grocery list. POST it with: -d '{\"name\":\"Apples\"}'"
+error = "Oranges was not found in the inventory. POST it with: -d '{\"name\":\"Oranges\"}'"

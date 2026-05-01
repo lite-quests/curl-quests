@@ -19,9 +19,13 @@ Two curl flags make this possible:
 ---
 
 Briefing:
-You've now been given access to the payroll dashboard. At the end of every
-month, employee payslips are generated as files and uploaded to the system.
-But this time, something went wrong.
+After proving yourself with inventory and system tasks, the manager
+gives you temporary access to the payroll dashboard.
+
+End-of-month payslips are generated as files and uploaded to the system.
+But something went wrong — one of the records is incorrect.
+
+Your job is to download, inspect, and fix it.
 
 Base URL: http://localhost:8080
 

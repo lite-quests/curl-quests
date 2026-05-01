@@ -18,8 +18,14 @@ strips everything after it — your filters will silently disappear.
 ---
 
 Briefing:
-After a long day of work at the grocery store, you open your favorite Pokémon game. 
-Professor Oak has built a Pokémon search API. You can filter Pokémon using query parameters.
+After three exhausting days at the grocery store, you're finally done with your shift.
+While taking a break in the storage room, you notice something strange —
+a handheld device left behind by one of the suppliers.
+
+Turns out, it's connected to a Pokémon research database built by Professor Oak.
+Curious (and slightly bored), you start exploring it.
+Unlike your inventory system, this one is much more powerful —
+it lets you search Pokémon using filters like type, region, role, and more.
 
 Base URL: http://localhost:8080
 

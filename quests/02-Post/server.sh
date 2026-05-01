@@ -13,9 +13,9 @@ class Handler(BaseHTTPRequestHandler):
         pass  # silence access logs
 
     def do_GET(self):
-        if self.path == "/groceries":
+        if self.path == "/inventory":
             conn = sqlite3.connect(DB_PATH)
-            rows = conn.execute("SELECT id, name FROM groceries").fetchall()
+            rows = conn.execute("SELECT id, name FROM inventory").fetchall()
             conn.close()
             items = [{"id": r[0], "name": r[1]} for r in rows]
             body = json.dumps(items, indent=2).encode()
@@ -29,12 +29,12 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        if self.path == "/groceries":
+        if self.path == "/inventory":
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length))
             name = body.get("name", "")
             conn = sqlite3.connect(DB_PATH)
-            cur = conn.execute("INSERT INTO groceries (name) VALUES (?)", (name,))
+            cur = conn.execute("INSERT INTO inventory (name) VALUES (?)", (name,))
             item_id = cur.lastrowid
             conn.commit()
             conn.close()

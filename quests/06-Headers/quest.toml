@@ -7,7 +7,11 @@ what you'll accept back, and more. Getting headers right is the
 difference between a 200 and a 401.
 
 Briefing:
-The grocery API has been upgraded. It now enforces strict request rules.
+After fixing the payroll issue, you're pulled back to the grocery system.
+Overnight, the API was upgraded — and now it enforces strict request rules.
+
+The manager warns you:
+“If your headers are wrong, the system will reject everything.”
 
 Base URL: http://localhost:8080
 

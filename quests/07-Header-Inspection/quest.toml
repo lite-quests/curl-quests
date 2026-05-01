@@ -19,9 +19,12 @@ To inspect responses, use:
 ---
 
 Briefing:
-Work at the grocery store is not very eventful, but you overheard your
-colleagues gossiping about special discount coupons for the managers.
-It would be great if you could get your hands on one.
+After dealing with the new API rules, you realize something —
+the system exposes more than it should.
+
+Recently, you overheard your colleagues gossiping about special 
+discount coupons reserved only for managers. It would be great 
+if you could get your hands on one.
 
 Base URL: http://localhost:8080
 

@@ -18,10 +18,11 @@ Briefing:
 You were just enjoying your totally-not-stolen discount…
 …and everything glitches.
 
-Turns out: You broke a galactic relay system. Nice.
+Turns out, the store’s systems are tied to an intergalactic
+logistics network. And your “discount” just triggered a relay failure. Nice.
 
 Now the relay only speaks in HTTP Status Codes.
-Fix it before things get worse.
+Fix the relay before the entire supply chain collapses.
 
 Base URL: http://localhost:8080
 

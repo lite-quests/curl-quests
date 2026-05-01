@@ -1,5 +1,5 @@
 id = 3
-title = "Data Janitor"
+title = "Day 3: Maintain and Update"
 instructions = """
 Real-world data isn't static. Sometimes you need to fix a mistake or
 remove old records entirely. This is done using the `PUT`, `PATCH`,
@@ -13,8 +13,7 @@ In a RESTful API:
 ---
 
 Briefing:
-Today is day-2 of your training at the grocery store and you've been assigned
-the responsibility of maintaining the store's inventory.
+Today is day-3 of your training where they teach you about how to maintain and update your inventory.
 
 Base URL: http://localhost:8080
 
