@@ -13,7 +13,7 @@ use crate::app::App;
 
 pub fn draw(frame: &mut Frame, app: &App) {
     let chunks =
-        Layout::horizontal([Constraint::Length(22), Constraint::Fill(1)]).split(frame.area());
+        Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).split(frame.area());
 
     sidebar::render(frame, app, chunks[0]);
 
@@ -60,7 +60,7 @@ fn render_instructions(frame: &mut Frame, app: &App, area: ratatui::layout::Rect
              5. Press [ Submit ] to verify — checks run against the database\n\
              6. If you fail, try again! The quest stays open until you pass\n\n\
              General Navigation:\n\
-               Up / Down     Move sidebar selection\n\
+               Left / Right  Move tab selection\n\
                Enter         Open / activate\n\
                Tab / ← →     Switch focus between sections\n\
                Esc           Go back / dismiss result\n\

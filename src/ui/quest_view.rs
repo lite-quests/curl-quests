@@ -33,32 +33,32 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
-    // Build layout dynamically — answer input row only when the quest needs it.
-    let mut constraints = vec![
-        Constraint::Percentage(30), // instructions + hint
-        Constraint::Fill(1),        // terminal (history + live input)
-    ];
-    if qv.has_answer_input {
-        constraints.push(Constraint::Length(3)); // answer input
-    }
-    constraints.push(Constraint::Length(3)); // submit result
-    constraints.push(Constraint::Length(3)); // buttons
+    let cols = Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).split(inner);
+    let left_col = cols[0];
+    let right_col = cols[1];
 
-    let chunks = Layout::vertical(constraints).split(inner);
+    render_instructions(frame, qv, &quest.instructions, &quest.hint, left_col);
+
+    let mut right_constraints = vec![Constraint::Fill(1)]; // terminal
+    if qv.has_answer_input {
+        right_constraints.push(Constraint::Length(3)); // answer input
+    }
+    right_constraints.push(Constraint::Length(3)); // result
+    right_constraints.push(Constraint::Length(3)); // buttons
+
+    let right_chunks = Layout::vertical(right_constraints).split(right_col);
 
     let mut idx = 0;
-    render_instructions(frame, qv, &quest.instructions, &quest.hint, chunks[idx]);
-    idx += 1;
-    render_terminal(frame, qv, chunks[idx]);
+    render_terminal(frame, qv, right_chunks[idx]);
     idx += 1;
     if qv.has_answer_input {
         let prompt = quest.submit_prompt.as_deref().unwrap_or("Your answer");
-        render_answer_input(frame, qv, prompt, chunks[idx]);
+        render_answer_input(frame, qv, prompt, right_chunks[idx]);
         idx += 1;
     }
-    render_result(frame, qv, chunks[idx]);
+    render_result(frame, qv, right_chunks[idx]);
     idx += 1;
-    render_buttons(frame, qv, chunks[idx]);
+    render_buttons(frame, qv, right_chunks[idx]);
 }
 
 // ---------------------------------------------------------------------------

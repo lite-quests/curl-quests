@@ -316,7 +316,7 @@ impl App {
     fn handle_overview_key(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => self.exit = true,
-            KeyCode::Up => {
+            KeyCode::Left => {
                 if self.reset_focused {
                     self.reset_focused = false;
                     self.reset_done = false;
@@ -324,7 +324,7 @@ impl App {
                     self.set_sidebar(self.sidebar_index - 1);
                 }
             }
-            KeyCode::Down => {
+            KeyCode::Right => {
                 if !self.reset_focused {
                     if self.sidebar_index < SIDEBAR_ITEMS.len() - 1 {
                         self.set_sidebar(self.sidebar_index + 1);
