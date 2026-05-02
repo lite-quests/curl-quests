@@ -469,6 +469,13 @@ impl App {
                     }
                 }
             }
+            QuestAction::BackspaceWord => {
+                let qv = self.quest_view.as_mut().unwrap();
+                let new_cursor = find_word_left(&qv.input, qv.cursor);
+                qv.input.replace_range(new_cursor..qv.cursor, "");
+                qv.cursor = new_cursor;
+                qv.scroll_offset = 0;
+            }
             QuestAction::CursorLeft => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.cursor > 0 {
@@ -578,6 +585,12 @@ impl App {
                     qv.answer_cursor -= 1;
                     qv.answer.remove(qv.answer_cursor);
                 }
+            }
+            QuestAction::AnswerBackspaceWord => {
+                let qv = self.quest_view.as_mut().unwrap();
+                let new_cursor = find_word_left(&qv.answer, qv.answer_cursor);
+                qv.answer.replace_range(new_cursor..qv.answer_cursor, "");
+                qv.answer_cursor = new_cursor;
             }
             QuestAction::AnswerCursorLeft => {
                 let qv = self.quest_view.as_mut().unwrap();
@@ -800,6 +813,8 @@ enum QuestAction {
     HScrollRight,
     IncreaseWidth,
     DecreaseWidth,
+    BackspaceWord,
+    AnswerBackspaceWord,
 }
 
 fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
@@ -823,8 +838,15 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::CopyLastOutput,
                 KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordLeft,
                 KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordRight,
+                KeyCode::Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::BackspaceWord,
                 KeyCode::Char(c) => QuestAction::Insert(c),
-                KeyCode::Backspace => QuestAction::Backspace,
+                KeyCode::Backspace => {
+                    if key.modifiers.intersects(KeyModifiers::ALT | KeyModifiers::CONTROL) {
+                        QuestAction::BackspaceWord
+                    } else {
+                        QuestAction::Backspace
+                    }
+                }
                 KeyCode::Left => {
                     if key.modifiers.contains(KeyModifiers::ALT) {
                         QuestAction::CursorWordLeft
@@ -867,8 +889,15 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
             QuestFocus::Answer => match key.code {
                 KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::AnswerCursorWordLeft,
                 KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::AnswerCursorWordRight,
+                KeyCode::Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::AnswerBackspaceWord,
                 KeyCode::Char(c) => QuestAction::AnswerInsert(c),
-                KeyCode::Backspace => QuestAction::AnswerBackspace,
+                KeyCode::Backspace => {
+                    if key.modifiers.intersects(KeyModifiers::ALT | KeyModifiers::CONTROL) {
+                        QuestAction::AnswerBackspaceWord
+                    } else {
+                        QuestAction::AnswerBackspace
+                    }
+                }
                 KeyCode::Left => {
                     if key.modifiers.contains(KeyModifiers::ALT) {
                         QuestAction::AnswerCursorWordLeft
