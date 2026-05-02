@@ -33,7 +33,10 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
-    let cols = Layout::horizontal([Constraint::Percentage(40), Constraint::Percentage(60)]).split(inner);
+    let cols = Layout::horizontal([
+        Constraint::Percentage(qv.left_column_width),
+        Constraint::Percentage(100_u16.saturating_sub(qv.left_column_width)),
+    ]).split(inner);
     let left_col = cols[0];
     let right_col = cols[1];
 
@@ -83,7 +86,7 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
     let focused = qv.focus == QuestFocus::Instructions;
     let border_color = if focused { Color::Yellow } else { Color::DarkGray };
     let title = if focused {
-        " Instructions (↑/↓ scroll  Tab next) "
+        " Instructions (↑/↓ scroll  ←/→ resize  Tab next) "
     } else {
         " Instructions "
     };

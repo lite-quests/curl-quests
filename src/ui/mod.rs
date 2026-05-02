@@ -67,6 +67,7 @@ fn render_instructions(frame: &mut Frame, app: &App, area: ratatui::layout::Rect
                q             Quit\n\n\
              Quest Controls:\n\
                Up / Down     (Instructions) Scroll text up / down\n\
+               Left / Right  (Instructions) Resize column width\n\
                Up / Down     (Terminal) Navigate through previous commands\n\
                Shift + ↑/↓   (Terminal) Scroll terminal output up / down\n\
                PageUp/Down   Scroll up / down quickly\n\n\

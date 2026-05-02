@@ -99,6 +99,7 @@ pub struct QuestViewState {
     pub has_answer_input: bool,
     pub test_result: Option<TestResult>,
     pub focus: QuestFocus,
+    pub left_column_width: u16,
 }
 
 impl QuestViewState {
@@ -120,6 +121,7 @@ impl QuestViewState {
             has_answer_input,
             test_result: None,
             focus: QuestFocus::Instructions,
+            left_column_width: 40,
         }
     }
 }
@@ -523,6 +525,14 @@ impl App {
                     qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
                 }
             }
+            QuestAction::IncreaseWidth => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.left_column_width = qv.left_column_width.saturating_add(5).min(90);
+            }
+            QuestAction::DecreaseWidth => {
+                let qv = self.quest_view.as_mut().unwrap();
+                qv.left_column_width = qv.left_column_width.saturating_sub(5).max(10);
+            }
             QuestAction::HistoryUp => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.history.is_empty() { return; }
@@ -788,6 +798,8 @@ enum QuestAction {
     CopyLastOutput,
     HScrollLeft,
     HScrollRight,
+    IncreaseWidth,
+    DecreaseWidth,
 }
 
 fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
@@ -797,6 +809,8 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
             QuestFocus::Instructions => match key.code {
                 KeyCode::Up => QuestAction::ScrollUp,
                 KeyCode::Down => QuestAction::ScrollDown,
+                KeyCode::Left => QuestAction::DecreaseWidth,
+                KeyCode::Right => QuestAction::IncreaseWidth,
                 KeyCode::PageUp => QuestAction::PageUp,
                 KeyCode::PageDown => QuestAction::PageDown,
                 KeyCode::Tab => QuestAction::FocusNext,
