@@ -13,7 +13,10 @@ In a RESTful API:
 ---
 
 Briefing:
-Today is day-3 of your training where they teach you about how to maintain and update your inventory.
+Day 3 of training.
+You open the inventory… and immediately regret it.
+Typos. Wrong prices. Someone even typed random keys.
+Time to fix it and earn some brownie points from your boss.
 
 Base URL: http://localhost:8080
 

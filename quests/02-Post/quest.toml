@@ -9,7 +9,8 @@ Content-Type header is how you tell the server what format you're sending.
 ---
 
 Briefing:
-Today is day-2 of your training where they teach you about how to add new items to the inventory.
+Day 2 of training:
+You are asked to add new items to the inventory.
 
 Your inventory system is running at http://localhost:8080.
 
