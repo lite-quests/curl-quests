@@ -12,8 +12,7 @@ use ratatui::{
 use crate::app::App;
 
 pub fn draw(frame: &mut Frame, app: &App) {
-    let chunks =
-        Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).split(frame.area());
+    let chunks = Layout::vertical([Constraint::Length(3), Constraint::Fill(1)]).split(frame.area());
 
     sidebar::render(frame, app, chunks[0]);
 
@@ -47,7 +46,11 @@ fn count_wrapped_lines(text: &str, width: u16) -> u16 {
 
 fn render_instructions(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let is_focused = app.content_focused && app.sidebar_index == 1;
-    let border_color = if is_focused { Color::Yellow } else { Color::Cyan };
+    let border_color = if is_focused {
+        Color::Yellow
+    } else {
+        Color::Cyan
+    };
     let block = Block::bordered()
         .title(" Instructions ")
         .border_style(Style::new().fg(border_color));
@@ -57,7 +60,7 @@ fn render_instructions(frame: &mut Frame, app: &App, area: ratatui::layout::Rect
              2. The quest database is seeded and a server starts automatically\n\
              3. Read the instructions and use the Terminal to run curl commands\n\
              4. If the quest asks for an answer, type it in the Answer box\n\
-             5. Press [ Submit ] to verify — checks run against the database\n\
+             5. Press [ Submit ] to verify checks run against the database\n\
              6. If you fail, try again! The quest stays open until you pass\n\n\
              General Navigation:\n\
                Left / Right  Move tab selection\n\
@@ -92,7 +95,7 @@ fn render_instructions(frame: &mut Frame, app: &App, area: ratatui::layout::Rect
         let mut scrollbar_state = ScrollbarState::default()
             .content_length(max_scroll as usize)
             .position(scroll as usize);
-            
+
         frame.render_stateful_widget(
             Scrollbar::default()
                 .orientation(ScrollbarOrientation::VerticalRight)
@@ -110,13 +113,13 @@ fn render_reset(frame: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let (title, body, color) = if app.reset_done {
         (
             " Reset ",
-            "✓  Progress reset.\n\nAll completed quests have been cleared.\nThe grid is now empty — good luck!",
+            "✓  Progress reset.\n\nAll completed quests have been cleared.\nThe grid is now empty  good luck!",
             Color::Green,
         )
     } else {
         (
             " Reset Progress ",
-            "This will clear all your completed quest progress.\n\nThe quest grid will go back to zero — no quests marked complete.\n\nPress Enter to confirm.",
+            "This will clear all your completed quest progress.\n\nThe quest grid will go back to zero  no quests marked complete.\n\nPress Enter to confirm.",
             Color::Yellow,
         )
     };

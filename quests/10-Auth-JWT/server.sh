@@ -150,7 +150,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(200, {
             "token": token,
             "note": (
-                "This is a JWT (JSON Web Token). It is signed with HS256 — the server can "
+                "This is a JWT (JSON Web Token). It is signed with HS256  the server can "
                 "verify it is genuine without touching the database. It encodes who you are "
                 "(sub), when it was issued (iat), and when it expires (exp). "
                 "Pass it on every protected request with: "
@@ -162,7 +162,7 @@ class Handler(BaseHTTPRequestHandler):
     def handle_profile(self):
         username = self.get_auth_user()
         if not username:
-            self.send_json(401, {"error": "Unauthorized — pass your token with: -H \"Authorization: Bearer <token>\""})
+            self.send_json(401, {"error": "Unauthorized pass your token with: -H \"Authorization: Bearer <token>\""})
             return
 
         conn = sqlite3.connect(DB_PATH)
@@ -186,7 +186,7 @@ class Handler(BaseHTTPRequestHandler):
     def handle_put_friends(self):
         username = self.get_auth_user()
         if not username:
-            self.send_json(401, {"error": "Unauthorized — pass your token with: -H \"Authorization: Bearer <token>\""})
+            self.send_json(401, {"error": "Unauthorized pass your token with: -H \"Authorization: Bearer <token>\""})
             return
 
         data = self.read_json_body()

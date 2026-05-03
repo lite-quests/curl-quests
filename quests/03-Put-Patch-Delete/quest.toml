@@ -21,10 +21,10 @@ Time to fix it and earn some brownie points from your boss.
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET    /inventory        — List all items in the inventory
-  PATCH  /inventory/:id    — Update item fields (e.g., {"name": "...", "price": 0.0})
-  PUT    /inventory/:id    — Replace item entirely
-  DELETE /inventory/:id    — Remove item
+  GET    /inventory        : List all items in the inventory
+  PATCH  /inventory/:id    : Update item fields (e.g., {"name": "...", "price": 0.0})
+  PUT    /inventory/:id    : Replace item entirely
+  DELETE /inventory/:id    : Remove item
 
 Your mission:
   1. Inspect the inventory
@@ -37,7 +37,7 @@ Your mission:
      Item #2 "Out of stock Watermelon" ($0.00) is no longer accurate.
      Replace it entirely with "In stock Watermelon" at $5.00 using `PUT`.
   4. Delete the junk
-     Item #3 is just "asdfghjkl" — someone was testing the keyboard.
+     Item #3 is just "asdfghjkl", someone was testing the keyboard.
      Use `DELETE` to remove it from the system.
 
 Remember: `PATCH` and `PUT` usually require a JSON body and the

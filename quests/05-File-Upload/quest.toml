@@ -3,7 +3,7 @@ title = "Payslip Uploader"
 instructions = """
 Real APIs rarely deal with just text. File uploads power everything
 from profile pictures to document processing. When responses are large
-— reports, exports, payslips — you don't want them dumped to your
+(reports, exports, payslips) you don't want them dumped to your
 terminal. You save them.
 
 Two curl flags make this possible:
@@ -13,7 +13,7 @@ Two curl flags make this possible:
       Essential when the response is large or binary.
 
   -F "field=@filename"
-      Send a file as a multipart form upload — the same mechanism
+      Send a file as a multipart form upload, the same mechanism
       browsers use when you pick a file in a form.
 
 ---
@@ -23,17 +23,17 @@ After proving yourself with inventory and system tasks, the manager
 gives you temporary access to the payroll dashboard.
 
 End-of-month payslips are generated as files and uploaded to the system.
-But something went wrong — one of the records is incorrect.
+But something went wrong, one of the records is incorrect.
 
 Your job is to download, inspect, and fix it.
 
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /files/payslip         — Download the (faulty) annual payslip
-  GET  /files/correct-payslip — Download the corrected payslip
-  POST /payslips              — Upload a payslip file
-  PUT  /payslips              — Replace with the corrected file
+  GET  /files/payslip         : Download the (faulty) annual payslip
+  GET  /files/correct-payslip : Download the corrected payslip
+  POST /payslips              : Upload a payslip file
+  PUT  /payslips              : Replace with the corrected file
 
 Your mission:
   1. Download the payslip (JSON) and save it as a .json file locally
@@ -53,7 +53,7 @@ curl -o payslip.json http://localhost:8080/files/payslip
 # 2. Upload it
 curl -X POST -F "file=@payslip.json" http://localhost:8080/payslips
 
-# 3. Read the warning in the response — spot the mistake
+# 3. Read the warning in the response, spot the mistake
 
 # 4. Download the corrected payslip
 curl -o correct_payslip.json http://localhost:8080/files/correct-payslip

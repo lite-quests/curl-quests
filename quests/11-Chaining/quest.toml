@@ -2,7 +2,7 @@ id = 11
 title = "The Automation Architect"
 instructions = """
 In real-world development, you rarely make just one API request. Most
-tasks involve multiple steps — where the output of one request becomes
+tasks involve multiple steps, where the output of one request becomes
 the input for the next. This is called request chaining.
 
 ---
@@ -14,9 +14,9 @@ look up Alice's employee profile and borrow her access key to get in.
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /users           — List all employees
-  GET  /profiles/<uuid> — Access a specific employee's profile
-  GET  /vault           — Secure vault (requires X-Access-Key)
+  GET  /users           : List all employees
+  GET  /profiles/<uuid> : Access a specific employee's profile
+  GET  /vault           : Secure vault (requires X-Access-Key)
 
 Your mission:
   1. Find Alice's UUID from the list of users.

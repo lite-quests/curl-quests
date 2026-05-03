@@ -124,7 +124,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(201, {
                 "status": "uploaded",
                 "entries": len(entries),
-                "warning": f"Salary is 0 for: {months}. This looks like a mistake — please correct and re-upload with PUT.",
+                "warning": f"Salary is 0 for: {months}. This looks like a mistake  please correct and re-upload with PUT.",
             })
         else:
             self.send_json(201, {"status": "uploaded", "entries": len(entries)})

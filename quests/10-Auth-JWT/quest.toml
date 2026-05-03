@@ -1,20 +1,20 @@
 id = 10
 title = "Identity & Access"
 instructions = """
-Most real APIs don't let just anyone in. They require you to prove who you are —
-and that's where JWT comes in.
+Most real APIs don't let just anyone in. They require you to prove who you are.
+That's where JWT comes in.
 
 JWT (JSON Web Token) is the industry standard for stateless authentication.
 After you log in, the server hands you a signed token. You attach it to every
 protected request. The server verifies the signature without ever hitting a
-session database — the token itself is the proof.
+session database. The token itself is the proof.
 
 A JWT has three parts separated by dots:
 
   xxxxx.yyyyy.zzzzz
-    │       │       └─ Signature — HMAC proof the server issued this
-    │       └───────── Payload  — your claims: who you are, when it expires
-    └───────────────── Header   — algorithm (HS256) and type
+    │       │       └─ Signature : HMAC proof the server issued this
+    │       └───────── Payload  : your claims (who you are, when it expires)
+    └───────────────── Header   : algorithm (HS256) and type
 
 You pass it on every protected request like this:
 
@@ -30,14 +30,14 @@ add a few coworkers but you do it via cURL cuz you're cool like that.
 Base URL: http://localhost:8080
 
 Available endpoints:
-  POST /signup    — Create your account
-  POST /login     — Authenticate and receive a JWT
-  GET  /profile   — View your profile (JWT required)
-  PUT  /friends   — Add friends to your profile (JWT required)
+  POST /signup    : Create your account
+  POST /login     : Authenticate and receive a JWT
+  GET  /profile   : View your profile (JWT required)
+  PUT  /friends   : Add friends to your profile (JWT required)
 
 Your mission:
   1. Sign up with username "curl-quest" and a 6-12 character password.
-  2. Log in — the server will return a JWT token.
+  2. Log in, the server will return a JWT token.
   3. Use the token to GET /profile and see your empty friends list.
   4. Use the token to PUT /friends to add at least 2 friends.
   5. GET /profile again to confirm your friends appear.

@@ -17,8 +17,8 @@ endpoint that has been migrated to a new secure system.
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /old-archive      — The legacy location
-  GET  /new-secure-vault — The new destination
+  GET  /old-archive      : The legacy location
+  GET  /new-secure-vault : The new destination
 
 Your mission:
   1. Encounter the Detour: Try fetching `/old-archive`. Notice the

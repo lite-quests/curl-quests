@@ -1,7 +1,7 @@
 id = 4
 title = "The Elemental Search"
 instructions = """
-Search, filter, sort, paginate — query parameters are how APIs let you
+Search, filter, sort, paginate  query parameters are how APIs let you
 ask for exactly what you need instead of dumping everything. They live
 in the URL after a ?, and every character matters. Spaces, special
 characters, and reserved symbols must be URL-encoded or the server
@@ -9,7 +9,7 @@ won't understand them.
 
 Important: always wrap URLs in double quotes in your terminal.
 Without quotes, the shell treats & as a background operator and
-strips everything after it — your filters will silently disappear.
+strips everything after it  your filters will silently disappear.
 
   curl "http://localhost:8080/pokemon/search?type=fire&region=kanto"
         ^                                                            ^
@@ -19,18 +19,18 @@ strips everything after it — your filters will silently disappear.
 
 Briefing:
 After three exhausting days at the grocery store, you're finally done with your shift.
-While taking a break in the storage room, you notice something strange —
+While taking a break in the storage room, you notice something strange:
 a handheld device left behind by one of the suppliers.
 
 Turns out, it's connected to a Pokémon research database built by Professor Oak.
 Curious (and slightly bored), you start exploring it.
-Unlike your inventory system, this one is much more powerful —
-it lets you search Pokémon using filters like type, region, role, and more.
+Unlike your inventory system, this one is much more powerful.
+It lets you search Pokémon using filters like type, region, role, and more.
 
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /pokemon/search     — Search for Pokémon
+  GET  /pokemon/search     : Search for Pokémon
 
 Your mission:
   1. Fetch all Fire-type Pokémon
@@ -38,9 +38,9 @@ Your mission:
      (Hint: repeat the same key: ?type=water&type=grass)
   3. Fetch Pokémon that are Electric type AND from the Kanto region
   4. Fetch Pokémon with the role "special attacker"
-     (Spaces must be encoded properly — use + or %20)
+     (Spaces must be encoded properly, use + or %20)
   5. Fetch Pokémon sorted by base_stat in descending order
-  6. Final challenge: Combine everything —
+  6. Final challenge: Combine everything
        - type = fire OR grass
        - region = kanto
        - role = special attacker
@@ -57,7 +57,7 @@ Your mission:
 hint = """# 1. Fire types
 curl "http://localhost:8080/pokemon/search?type=fire"
 
-# 2. Water OR Grass (repeat the key — quote the URL so & isn't eaten by the shell)
+# 2. Water OR Grass (repeat the key, quote the URL so & isn't eaten by the shell)
 curl "http://localhost:8080/pokemon/search?type=water&type=grass"
 
 # 3. Electric AND Kanto

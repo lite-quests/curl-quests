@@ -19,7 +19,7 @@ To inspect responses, use:
 ---
 
 Briefing:
-After dealing with the new API rules, you realize something —
+After dealing with the new API rules, you realize something:
 the system exposes more than it should.
 
 Recently, you overheard your colleagues gossiping about special 
@@ -29,9 +29,9 @@ if you could get your hands on one.
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /employee-portal                  — Employee portal
-  GET  /staff-inventory?token=TOKEN      — Staff inventory
-  GET  /manager-vault?token=TOKEN        — Manager vault
+  GET  /employee-portal                  : Employee portal
+  GET  /staff-inventory?token=TOKEN      : Staff inventory
+  GET  /manager-vault?token=TOKEN        : Manager vault
 
 Your mission:
   1. Visit /employee-portal and find the X-Manager-Token in headers.
