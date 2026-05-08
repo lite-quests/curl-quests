@@ -1,0 +1,61 @@
+id = 11
+title = "JSON Querying with jq"
+instructions = """
+Most APIs return JSON data, which is tough to read in the terminal.
+Instead of copy-pasting, you can pipe (`|`) the output of `curl`
+directly into `jq` to filter and extract exactly what you need.
+
+Example: Extract the UUID of "Alice" from a user array:
+
+  curl -s http://api.example.com/users | jq -r '.[] | select(.name=="Alice") | .uuid'
+
+Breaking it down:
+  - `.`       : The JSON input.
+  - `.[]`     : Unpacks an array to process elements individually.
+  - `select`  : Filters for objects where `.name == "Alice"`.
+  - `.uuid`   : Extracts the `uuid` field.
+  - `-r`      : Outputs raw text (no quotes).
+
+Basics: `jq -r '.data'` (field), `jq -r '.[0].id'` (array index).
+
+Variables: Wrap a command in `$()` to save its output for your next request:
+  ID=$(curl -s http://api.example.com/users | jq -r '.[0].id')
+  curl -s http://api.example.com/profiles/$ID
+
+---
+
+Briefing:
+You've had enough of working weekends. The manager's scheduling system 
+has a hidden admin vault, but the password is buried in massive JSON. 
+
+Use `jq` to carve through the noise and secure your weekend off!
+
+Base URL: http://localhost:8080
+Endpoints: /config, /<NEXT_PATH>, /vault/<TOKEN>
+
+Your mission:
+  1. Fetch `/config` (object). Use `jq` to extract `next_path`.
+  2. Fetch `/<NEXT_PATH>` (array). Extract the `token` from the 88th log (index 87).
+  3. Fetch `/vault/<TOKEN>` (array). Filter for the user "admin" and 
+     extract their `secret_password`.
+
+Submit the final password.
+"""
+
+solutions = [
+    """# Step 1: Extract next_path into a variable
+NEXT_PATH=$(curl -s http://localhost:8080/config | jq -r '.next_path')""",
+    """# Step 2: Use the variable to get the token, and save it too
+TOKEN=$(curl -s http://localhost:8080/$NEXT_PATH | jq -r '.[87].token')""",
+    """# Step 3: Use the token to get the admin's secret password
+curl -s http://localhost:8080/vault/$TOKEN | jq -r '.[] | select(.name=="admin") | .secret_password'"""
+]
+
+submit_prompt = "Enter the 'secret_password' found in Step 3:"
+
+[server]
+port = 8080
+
+[verify.input]
+contains = ["JQ_MASTER_4242"]
+error = "Incorrect password. Make sure you correctly filtered the vault data for the admin user."
