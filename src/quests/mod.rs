@@ -41,7 +41,7 @@ pub struct Quest {
     pub id: usize,
     pub title: String,
     pub instructions: String,
-    pub hint: String,
+    pub solutions: Vec<String>,
     pub submit_prompt: Option<String>,
     pub setup: Option<QuestSetup>,
     #[allow(dead_code)]
@@ -102,7 +102,7 @@ struct QuestToml {
     id: usize,
     title: String,
     instructions: String,
-    hint: String,
+    solutions: Vec<String>,
     submit_prompt: Option<String>,
     setup: Option<SetupToml>,
     server: Option<ServerToml>,
@@ -167,7 +167,10 @@ pub fn load_quests(quests_dir: &Path) -> Vec<Quest> {
         };
         let parsed: QuestToml = match toml::from_str(&content) {
             Ok(p) => p,
-            Err(_) => continue,
+            Err(e) => {
+                let _ = std::fs::write(folder.join("error.log"), format!("TOML Parse Error: {}", e));
+                continue;
+            }
         };
 
         let setup = parsed.setup.map(|s| QuestSetup { seed: s.seed });
@@ -194,7 +197,7 @@ pub fn load_quests(quests_dir: &Path) -> Vec<Quest> {
             id: parsed.id,
             title: parsed.title,
             instructions: parsed.instructions,
-            hint: parsed.hint,
+            solutions: parsed.solutions,
             submit_prompt: parsed.submit_prompt,
             setup,
             server,

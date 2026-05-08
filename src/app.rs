@@ -19,6 +19,7 @@ pub const SIDEBAR_ITEMS: [&str; 3] = ["  Levels", "  Instructions", "  Exit"];
 #[derive(Debug, Clone, PartialEq)]
 pub enum QuestFocus {
     Instructions,
+    Solutions,
     Terminal,
     Answer,
     Submit,
@@ -28,7 +29,8 @@ pub enum QuestFocus {
 impl QuestFocus {
     pub fn next(&self, has_answer: bool) -> Self {
         match self {
-            Self::Instructions => Self::Terminal,
+            Self::Instructions => Self::Solutions,
+            Self::Solutions => Self::Terminal,
             Self::Terminal => {
                 if has_answer {
                     Self::Answer
@@ -44,7 +46,8 @@ impl QuestFocus {
     pub fn prev(&self, has_answer: bool) -> Self {
         match self {
             Self::Instructions => Self::Back,
-            Self::Terminal => Self::Instructions,
+            Self::Solutions => Self::Instructions,
+            Self::Terminal => Self::Solutions,
             Self::Answer => Self::Terminal,
             Self::Submit => {
                 if has_answer {
@@ -100,6 +103,9 @@ pub struct QuestViewState {
     pub test_result: Option<TestResult>,
     pub focus: QuestFocus,
     pub left_column_width: u16,
+    pub solutions_expanded: bool,
+    pub selected_solution_idx: usize,
+    pub revealed_solutions: std::collections::HashSet<usize>,
 }
 
 impl QuestViewState {
@@ -122,6 +128,9 @@ impl QuestViewState {
             test_result: None,
             focus: QuestFocus::Instructions,
             left_column_width: 40,
+            solutions_expanded: false,
+            selected_solution_idx: 0,
+            revealed_solutions: std::collections::HashSet::new(),
         }
     }
 }
@@ -691,6 +700,41 @@ impl App {
                     }
                 }
             }
+            QuestAction::ToggleSolution => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if !qv.solutions_expanded {
+                    qv.solutions_expanded = true;
+                } else {
+                    let idx = qv.selected_solution_idx;
+                    let num_sols = self.quests.iter().find(|q| q.id == qv.quest_id).unwrap().solutions.len();
+                    if idx == 0 {
+                        qv.solutions_expanded = false;
+                        qv.revealed_solutions.clear();
+                    } else if idx <= num_sols {
+                        let sol_idx = idx - 1;
+                        if qv.revealed_solutions.contains(&sol_idx) {
+                            qv.revealed_solutions.remove(&sol_idx);
+                        } else {
+                            qv.revealed_solutions.insert(sol_idx);
+                        }
+                    }
+                }
+            }
+            QuestAction::SolutionUp => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if qv.solutions_expanded && qv.selected_solution_idx > 0 {
+                    qv.selected_solution_idx -= 1;
+                }
+            }
+            QuestAction::SolutionDown => {
+                let qv = self.quest_view.as_mut().unwrap();
+                if qv.solutions_expanded {
+                    let num_sols = self.quests.iter().find(|q| q.id == qv.quest_id).unwrap().solutions.len();
+                    if qv.selected_solution_idx < num_sols {
+                        qv.selected_solution_idx += 1;
+                    }
+                }
+            }
         }
     }
 
@@ -815,6 +859,9 @@ enum QuestAction {
     DecreaseWidth,
     BackspaceWord,
     AnswerBackspaceWord,
+    ToggleSolution,
+    SolutionUp,
+    SolutionDown,
 }
 
 fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
@@ -831,6 +878,14 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 KeyCode::Tab => QuestAction::FocusNext,
                 KeyCode::BackTab => QuestAction::FocusPrev,
                 KeyCode::Enter => QuestAction::FocusNext,
+                _ => QuestAction::None,
+            },
+            QuestFocus::Solutions => match key.code {
+                KeyCode::Up => QuestAction::SolutionUp,
+                KeyCode::Down => QuestAction::SolutionDown,
+                KeyCode::Tab => QuestAction::FocusNext,
+                KeyCode::BackTab => QuestAction::FocusPrev,
+                KeyCode::Enter => QuestAction::ToggleSolution,
                 _ => QuestAction::None,
             },
             QuestFocus::Terminal => match key.code {

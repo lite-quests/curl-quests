@@ -47,19 +47,17 @@ Your mission:
 
 """
 
-hint = """# 1. Download the faulty payslip
-curl -o payslip.json http://localhost:8080/files/payslip
-
-# 2. Upload it
-curl -X POST -F "file=@payslip.json" http://localhost:8080/payslips
-
-# 3. Read the warning in the response — spot the mistake
-
-# 4. Download the corrected payslip
-curl -o correct_payslip.json http://localhost:8080/files/correct-payslip
-
-# 5. Fix it
-curl -X PUT -F "file=@correct_payslip.json" http://localhost:8080/payslips"""
+solutions = [
+    """# 1. Download the faulty payslip
+curl -o payslip.json http://localhost:8080/files/payslip""",
+    """# 2. Upload it
+curl -X POST -F "file=@payslip.json" http://localhost:8080/payslips""",
+    """# 3. Read the warning in the response — spot the mistake""",
+    """# 4. Download the corrected payslip
+curl -o correct_payslip.json http://localhost:8080/files/correct-payslip""",
+    """# 5. Fix it
+curl -X PUT -F "file=@correct_payslip.json" http://localhost:8080/payslips""",
+]
 
 [setup]
 seed = [

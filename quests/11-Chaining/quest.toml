@@ -67,14 +67,14 @@ pipeline is.
 
 """
 
-hint = """# 1. Fetch users and find Alice's UUID
-curl -s http://localhost:8080/users
-
-# 2. Get the access key from her profile (Replace <UUID> with the actual ID)
-curl -s http://localhost:8080/profiles/<UUID>
-
-# 3. Unlock the vault using the header
-curl -s -H "X-Access-Key: <ACCESS_KEY>" http://localhost:8080/vault"""
+solutions = [
+    """# 1. Fetch users and find Alice's UUID
+curl -s http://localhost:8080/users""",
+    """# 2. Get the access key from her profile (Replace <UUID> with the actual ID)
+curl -s http://localhost:8080/profiles/<UUID>""",
+    """# 3. Unlock the vault using the header
+curl -s -H "X-Access-Key: <ACCESS_KEY>" http://localhost:8080/vault""",
+]
 
 submit_prompt = "Enter the 'secret_token' found inside the vault:"
 

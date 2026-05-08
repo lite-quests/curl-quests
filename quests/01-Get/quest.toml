@@ -29,7 +29,9 @@ Your mission:
 ---
 
 """
-hint = "curl http://localhost:8080/inventory"
+solutions = [
+    """curl http://localhost:8080/inventory""",
+]
 
 submit_prompt = "Which item's name starts with 'B'?"
 

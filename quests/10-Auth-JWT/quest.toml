@@ -46,28 +46,26 @@ Your mission:
   
 """
 
-hint = """# 1. Sign up
+solutions = [
+    """# 1. Sign up
 curl -s -X POST -H "Content-Type: application/json" \\
      -d '{"username":"curl-quest","password":"hello123"}' \\
-     http://localhost:8080/signup
-
-# 2. Log in and grab the token
+     http://localhost:8080/signup""",
+    """# 2. Log in and grab the token
 curl -s -X POST -H "Content-Type: application/json" \\
      -d '{"username":"curl-quest","password":"hello123"}' \\
-     http://localhost:8080/login
-
-# 3. View profile (replace <token> with what login returned)
+     http://localhost:8080/login""",
+    """# 3. View profile (replace <token> with what login returned)
 TOKEN="<paste token here>"
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/profile
-
-# 4. Add 2 friends
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/profile""",
+    """# 4. Add 2 friends
 curl -s -X PUT -H "Content-Type: application/json" \\
      -H "Authorization: Bearer $TOKEN" \\
      -d '{"friends":["Alice","Bob"]}' \\
-     http://localhost:8080/friends
-
-# 5. Confirm
-curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/profile"""
+     http://localhost:8080/friends""",
+    """# 5. Confirm
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/profile""",
+]
 
 [setup]
 seed = [

@@ -54,24 +54,20 @@ Your mission:
 
 """
 
-hint = """# 1. Fire types
-curl "http://localhost:8080/pokemon/search?type=fire"
-
-# 2. Water OR Grass (repeat the key — quote the URL so & isn't eaten by the shell)
-curl "http://localhost:8080/pokemon/search?type=water&type=grass"
-
-# 3. Electric AND Kanto
-curl "http://localhost:8080/pokemon/search?type=electric&region=kanto"
-
-# 4. Role with encoded space
-curl "http://localhost:8080/pokemon/search?role=special+attacker"
-
-# 5. Sort by base_stat descending
-curl "http://localhost:8080/pokemon/search?sort=base_stat_desc"
-
-# 6. Final combined query
-curl "http://localhost:8080/pokemon/search?type=fire&type=grass&region=kanto&role=special+attacker&sort=base_stat_desc"
-"""
+solutions = [
+    """# 1. Fire types
+curl "http://localhost:8080/pokemon/search?type=fire"""",
+    """# 2. Water OR Grass (repeat the key — quote the URL so & isn't eaten by the shell)
+curl "http://localhost:8080/pokemon/search?type=water&type=grass"""",
+    """# 3. Electric AND Kanto
+curl "http://localhost:8080/pokemon/search?type=electric&region=kanto"""",
+    """# 4. Role with encoded space
+curl "http://localhost:8080/pokemon/search?role=special+attacker"""",
+    """# 5. Sort by base_stat descending
+curl "http://localhost:8080/pokemon/search?sort=base_stat_desc"""",
+    """# 6. Final combined query
+curl "http://localhost:8080/pokemon/search?type=fire&type=grass&region=kanto&role=special+attacker&sort=base_stat_desc"""",
+]
 
 submit_prompt = "What is the name of the 2nd Pokémon in the final combined query result?"
 

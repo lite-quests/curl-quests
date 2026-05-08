@@ -40,7 +40,26 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let left_col = cols[0];
     let right_col = cols[1];
 
-    render_instructions(frame, qv, &quest.instructions, &quest.hint, left_col);
+    let inner_left_w = left_col.width.saturating_sub(2);
+    let mut sol_height = 3;
+    if qv.solutions_expanded {
+        for (i, sol) in quest.solutions.iter().enumerate() {
+            sol_height += 1;
+            if qv.revealed_solutions.contains(&i) {
+                sol_height += count_wrapped_lines(sol, inner_left_w);
+            }
+        }
+    }
+    let max_sol_height = inner.height.saturating_sub(5); // Ensure instructions get at least 5 lines
+    sol_height = sol_height.min(max_sol_height).max(3);
+
+    let left_chunks = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(sol_height),
+    ]).split(left_col);
+
+    render_instructions(frame, qv, &quest.instructions, left_chunks[0]);
+    render_solutions(frame, qv, &quest.solutions, left_chunks[1]);
 
     let mut right_constraints = vec![Constraint::Fill(1)]; // terminal
     if qv.has_answer_input {
@@ -82,7 +101,7 @@ fn count_wrapped_lines(text: &str, width: u16) -> u16 {
     count
 }
 
-fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &str, hint: &str, area: Rect) {
+fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &str, area: Rect) {
     let focused = qv.focus == QuestFocus::Instructions;
     let border_color = if focused { Color::Yellow } else { Color::DarkGray };
     let title = if focused {
@@ -93,7 +112,7 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
     let block = Block::bordered()
         .title(title)
         .border_style(Style::new().fg(border_color));
-    let text = format!("{}\n\nHint: {}", instructions, hint);
+    let text = instructions.to_string();
     let inner = block.inner(area);
     let total_lines = count_wrapped_lines(&text, inner.width);
     let max_scroll = total_lines.saturating_sub(inner.height);
@@ -120,6 +139,63 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
             &mut scrollbar_state,
         );
     }
+}
+
+fn render_solutions(frame: &mut Frame, qv: &QuestViewState, solutions: &[String], area: Rect) {
+    let focused = qv.focus == QuestFocus::Solutions;
+    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let title = if focused {
+        " Solutions (Enter to toggle, Up/Down to navigate) "
+    } else {
+        " Solutions "
+    };
+
+    let block = Block::bordered()
+        .title(title)
+        .border_style(Style::new().fg(border_color));
+
+    let mut lines = Vec::new();
+    
+    if qv.solutions_expanded {
+        for (i, sol) in solutions.iter().enumerate() {
+            let is_selected = focused && qv.selected_solution_idx == i + 1;
+            let marker = if qv.revealed_solutions.contains(&i) { "▼" } else { "▶" };
+            
+            let btn_style = if is_selected {
+                Style::new().bg(Color::White).fg(Color::Black).bold()
+            } else {
+                Style::new().fg(Color::Cyan)
+            };
+            
+            lines.push(Line::from(Span::styled(
+                format!(" {} Solution Part {} ", marker, i + 1),
+                btn_style,
+            )));
+            
+            if qv.revealed_solutions.contains(&i) {
+                for line in sol.lines() {
+                    lines.push(Line::from(Span::styled(
+                        format!("   {}", line),
+                        Style::new().fg(Color::Gray)
+                    )));
+                }
+            }
+        }
+    } else {
+        let is_selected = focused && qv.selected_solution_idx == 0;
+        let style = if is_selected {
+            Style::new().bg(Color::White).fg(Color::Black).bold()
+        } else {
+            Style::new().fg(Color::Cyan)
+        };
+        lines.push(Line::from(Span::styled(" ▶ Show Solutions ", style)));
+    }
+
+    // A simple paragraph with wrapping
+    frame.render_widget(
+        Paragraph::new(lines).block(block).wrap(Wrap { trim: false }),
+        area,
+    );
 }
 
 fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {

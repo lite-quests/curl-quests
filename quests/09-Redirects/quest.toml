@@ -35,14 +35,14 @@ Pro Tip: Combine `-i` and `-L` to see the entire chain of headers as
 
 """
 
-hint = """# 1. See the redirect message
-curl http://localhost:8080/old-archive
-
-# 2. Inspect headers to find the 'Location'
-curl -i http://localhost:8080/old-archive
-
-# 3. Follow the trail to the final destination
-curl -L http://localhost:8080/old-archive"""
+solutions = [
+    """# 1. See the redirect message
+curl http://localhost:8080/old-archive""",
+    """# 2. Inspect headers to find the 'Location'
+curl -i http://localhost:8080/old-archive""",
+    """# 3. Follow the trail to the final destination
+curl -L http://localhost:8080/old-archive""",
+]
 
 submit_prompt = "What is the Archive Access Code?"
 

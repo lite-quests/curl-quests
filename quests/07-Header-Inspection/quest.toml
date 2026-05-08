@@ -46,15 +46,15 @@ Submit the coupon code to enjoy your illegal discount.
 ---
 
 """
-hint = """# 1. Intercept the Employee Portal
-curl -i http://localhost:8080/employee-portal
-
-# 2. Scan Staff Inventory (skip the 10,000 lines)
-curl -I "http://localhost:8080/staff-inventory?token=Manager-Access-99"
-
-# 3. Become the Boss
+solutions = [
+    """# 1. Intercept the Employee Portal
+curl -i http://localhost:8080/employee-portal""",
+    """# 2. Scan Staff Inventory (skip the 10,000 lines)
+curl -I "http://localhost:8080/staff-inventory?token=Manager-Access-99"""",
+    """# 3. Become the Boss
 curl -v -A "The-Bosses-iPad" "http://localhost:8080/manager-vault?token=Manager-Access-99"
-# Look for X-Ultimate-Coupon in headers!"""
+# Look for X-Ultimate-Coupon in headers!""",
+]
 
 submit_prompt = "Enter the X-Ultimate-Coupon code:"
 

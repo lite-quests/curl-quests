@@ -43,14 +43,14 @@ Your mission:
 ---
 
 """
-hint = """1. Check the move (Look for 'Location' header)
-curl -i http://localhost:8080/satellite
-
-2. Use the new URL and add the key
-curl -i -H "X-Repair-Key: RED_LEADER" http://localhost:8080/v2/satellite
-
-3. If it's a 503, check the body! It will ask for: -H "X-Bypass: true"
-curl -i -H "X-Repair-Key: RED_LEADER" -H "X-Bypass: true" http://localhost:8080/v2/satellite"""
+solutions = [
+    """1. Check the move (Look for 'Location' header)
+curl -i http://localhost:8080/satellite""",
+    """2. Use the new URL and add the key
+curl -i -H "X-Repair-Key: RED_LEADER" http://localhost:8080/v2/satellite""",
+    """3. If it's a 503, check the body! It will ask for: -H "X-Bypass: true"
+curl -i -H "X-Repair-Key: RED_LEADER" -H "X-Bypass: true" http://localhost:8080/v2/satellite""",
+]
 submit_prompt = "Enter the Repair Code (found in the 200 OK response body):"
 
 [setup]
