@@ -79,6 +79,8 @@ pub struct QuestViewState {
     pub quest_id: usize,
     /// History of (command, output) pairs — grows with each Run.
     pub history: Vec<TerminalEntry>,
+    /// Persistent command history for up/down navigation.
+    pub command_history: Vec<String>,
     /// Terminal command input.
     pub input: String,
     pub cursor: usize,
@@ -113,6 +115,7 @@ impl QuestViewState {
         Self {
             quest_id,
             history: Vec::new(),
+            command_history: Vec::new(),
             input: String::new(),
             cursor: 0,
             scroll_offset: 0,
@@ -551,11 +554,11 @@ impl App {
             }
             QuestAction::HistoryUp => {
                 let qv = self.quest_view.as_mut().unwrap();
-                if qv.history.is_empty() { return; }
+                if qv.command_history.is_empty() { return; }
                 
                 if qv.history_index.is_none() {
                     qv.pending_input = qv.input.clone();
-                    qv.history_index = Some(qv.history.len().saturating_sub(1));
+                    qv.history_index = Some(qv.command_history.len().saturating_sub(1));
                 } else {
                     let idx = qv.history_index.unwrap();
                     if idx > 0 {
@@ -564,16 +567,16 @@ impl App {
                 }
                 
                 if let Some(idx) = qv.history_index {
-                    qv.input = qv.history[idx].command.clone();
+                    qv.input = qv.command_history[idx].clone();
                     qv.cursor = qv.input.len();
                 }
             }
             QuestAction::HistoryDown => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if let Some(idx) = qv.history_index {
-                    if idx + 1 < qv.history.len() {
+                    if idx + 1 < qv.command_history.len() {
                         qv.history_index = Some(idx + 1);
-                        qv.input = qv.history[idx + 1].command.clone();
+                        qv.input = qv.command_history[idx + 1].clone();
                     } else {
                         qv.history_index = None;
                         qv.input = qv.pending_input.clone();
@@ -744,6 +747,21 @@ impl App {
         if cmd.is_empty() {
             return;
         }
+        
+        qv.command_history.push(cmd.clone());
+
+        if cmd == "clear" {
+            qv.history.clear();
+            qv.input.clear();
+            qv.cursor = 0;
+            qv.scroll_offset = 0;
+            qv.h_scroll_offset = 0;
+            qv.history_index = None;
+            qv.pending_input.clear();
+            qv.test_result = None;
+            return;
+        }
+
         let env_file = format!("data/quest_{}_env.sh", qv.quest_id);
         let wrapper_cmd = format!(
             "source {} 2>/dev/null\n{}\ncode=$?\ndeclare -p > {} 2>/dev/null\nexit $code",
