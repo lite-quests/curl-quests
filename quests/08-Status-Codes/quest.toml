@@ -27,8 +27,8 @@ Fix the relay before the entire supply chain collapses.
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /satellite          — The legacy relay endpoint
-  GET  /v2/satellite       — The new relay endpoint
+  GET  /satellite          : The legacy relay endpoint
+  GET  /v2/satellite       : The new relay endpoint
 
 Your mission:
   1. Find the Relay: The endpoint `/satellite` is deprecated. Use

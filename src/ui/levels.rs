@@ -9,9 +9,9 @@ use crate::app::App;
 
 pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     let title = if app.content_focused {
-        " Levels — ↑↓←→ navigate  Enter open  Esc back "
+        " Levels: ↑↓←→ navigate  Enter open  Esc back "
     } else {
-        " Levels — Enter to browse quests "
+        " Levels:Enter to browse quests "
     };
 
     let outer = Block::bordered()

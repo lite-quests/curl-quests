@@ -18,7 +18,8 @@ was done in stages, leaving behind a long trail of breadcrumbs!
 Base URL: http://localhost:8080
 
 Available endpoints:
-  GET  /old-archive      — The legacy location
+  GET  /old-archive      : The legacy location
+  GET  /new-secure-vault : The new destination
 
 Your mission:
   1. Encounter the Detour: Try fetching `/old-archive`. Notice the

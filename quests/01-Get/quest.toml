@@ -2,7 +2,7 @@ id = 1
 title = "Day 1: Inventory Check"
 instructions = """
 The web runs on HTTP. Every time your browser loads a page, fetches data,
-or checks for updates — it's making a GET request. GET is the most fundamental
+or checks for updates it's making a GET request. GET is the most fundamental
 HTTP method: ask the server for something, get a response back. curl lets you
 do the same thing from your terminal, without a browser.
 
@@ -19,7 +19,7 @@ No further instructions.
 A server is running at http://localhost:8080.
 
 Available endpoints:
-  GET  /inventory       — List all inventory items
+  GET  /inventory       : List all inventory items
 
 Your mission:
   1. Fetch the list of items using a GET request

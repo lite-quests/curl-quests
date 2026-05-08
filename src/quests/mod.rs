@@ -1,5 +1,5 @@
-use rusqlite::types::Value;
 use rusqlite::Connection;
+use rusqlite::types::Value;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
@@ -94,7 +94,7 @@ impl Quest {
 }
 
 // ---------------------------------------------------------------------------
-// TOML schema (private — only used during loading)
+// TOML schema (private only used during loading)
 // ---------------------------------------------------------------------------
 
 #[derive(Deserialize)]

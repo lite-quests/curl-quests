@@ -32,7 +32,7 @@ class Handler(BaseHTTPRequestHandler):
         # parse_qs handles %20 / + decoding automatically
         params = parse_qs(parsed.query, keep_blank_values=False)
 
-        # Require at least one filter — prevent bare /pokemon/search from leaking all data
+        # Require at least one filter  prevent bare /pokemon/search from leaking all data
         if not params:
             self.send_json(400, {"error": "Bad Request: at least one query parameter is required (type, region, role, sort)"})
             return

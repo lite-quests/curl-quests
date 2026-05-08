@@ -8,15 +8,15 @@ difference between a 200 and a 401.
 
 Briefing:
 After fixing the payroll issue, you're pulled back to the grocery system.
-Overnight, the API was upgraded — and now it enforces strict request rules.
+Overnight, the API was upgraded, and now it enforces strict request rules.
 
 The manager warns you:
 “If your headers are wrong, the system will reject everything.”
 
 Base URL: http://localhost:8080
 
-  GET  /groceries          — List all grocery items
-  POST /groceries          — Add an item
+  GET  /groceries          : List all grocery items
+  POST /groceries          : Add an item
 
 New Requirements:
   1. ALL requests MUST include: -H "x-api-key: secret123"
@@ -114,7 +114,7 @@ error = "Apples not found. POST it with: -H \"x-api-key: secret123\" -H \"Conten
 [[verify.checks]]
 sql = "SELECT content_type FROM groceries WHERE name = 'Apples'"
 expected = "application/x-www-form-urlencoded"
-error = "Apples must be added using Content-Type: application/x-www-form-urlencoded — use -H \"Content-Type: application/x-www-form-urlencoded\" -d \"name=Apples\""
+error = "Apples must be added using Content-Type: application/x-www-form-urlencoded, use -H \"Content-Type: application/x-www-form-urlencoded\" -d \"name=Apples\""
 
 [[verify.checks]]
 sql = "SELECT COUNT(*) FROM groceries WHERE name = 'Bananas'"

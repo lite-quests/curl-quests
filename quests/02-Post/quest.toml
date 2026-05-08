@@ -1,7 +1,7 @@
 id = 2
 title = "Day 2: Adding Items"
 instructions = """
-GET only reads data. To create something — a new user, a comment, an order —
+GET only reads data. To create something  a new user, a comment, an order 
 you need POST. POST sends a body alongside the request, which is how you pass
 data to the server. JSON is the most common format for that body, and the
 Content-Type header is how you tell the server what format you're sending.
@@ -14,10 +14,10 @@ You are asked to add new items to the inventory.
 
 Your inventory system is running at http://localhost:8080.
 
-  GET  /inventory          — List all inventory items
-  POST /inventory          — Add an item (JSON: {"name": "..."})
+  GET  /inventory          : List all inventory items
+  POST /inventory          : Add an item (JSON: {"name": "..."})
 
-Tip — when running curl in a terminal you may see a progress bar.
+Tip - when running curl in a terminal you may see a progress bar.
 Use -s (silent) to suppress it and get clean output:
 
   curl -s http://localhost:8080/inventory

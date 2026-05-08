@@ -3,14 +3,15 @@ use std::collections::HashSet;
 use std::io;
 use std::process::{Child, Stdio};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind};
+use crossterm::event::{
+    self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseEvent, MouseEventKind,
+};
 use ratatui::DefaultTerminal;
 
 use crate::db::{self, Db};
 use crate::quests;
 
 pub const SIDEBAR_ITEMS: [&str; 3] = ["  Levels", "  Instructions", "  Exit"];
-
 
 // ---------------------------------------------------------------------------
 // State types
@@ -77,7 +78,7 @@ pub struct TerminalEntry {
 #[derive(Debug)]
 pub struct QuestViewState {
     pub quest_id: usize,
-    /// History of (command, output) pairs — grows with each Run.
+    /// History of (command, output) pairs grows with each Run.
     pub history: Vec<TerminalEntry>,
     /// Persistent command history for up/down navigation.
     pub command_history: Vec<String>,
@@ -247,7 +248,7 @@ impl App {
         }
     }
 
-    /// Stop the server and delete the quest DB — called whenever a quest session ends.
+    /// Stop the server and delete the quest DB called whenever a quest session ends.
     fn cleanup_quest(&mut self) {
         self.stop_server();
         let _ = std::fs::remove_file(db::quest_db_path());
@@ -263,7 +264,9 @@ impl App {
             self.handle_events()?;
             while crossterm::event::poll(std::time::Duration::from_millis(0))? {
                 self.handle_events()?;
-                if self.exit { break; }
+                if self.exit {
+                    break;
+                }
             }
         }
         Ok(())
@@ -298,10 +301,12 @@ impl App {
         } else if self.sidebar_index == 1 {
             match mouse.kind {
                 MouseEventKind::ScrollUp => {
-                    self.global_instructions_scroll = self.global_instructions_scroll.saturating_sub(3);
+                    self.global_instructions_scroll =
+                        self.global_instructions_scroll.saturating_sub(3);
                 }
                 MouseEventKind::ScrollDown => {
-                    self.global_instructions_scroll = self.global_instructions_scroll
+                    self.global_instructions_scroll = self
+                        .global_instructions_scroll
                         .saturating_add(3)
                         .min(self.global_instructions_max_scroll.get());
                 }
@@ -316,7 +321,9 @@ impl App {
             match self.sidebar_index {
                 0 => self.handle_list_key(key),
                 1 => self.handle_global_instructions_key(key),
-                _ => { self.content_focused = false; }
+                _ => {
+                    self.content_focused = false;
+                }
             }
         } else {
             self.handle_overview_key(key);
@@ -424,15 +431,18 @@ impl App {
                 self.global_instructions_scroll = self.global_instructions_scroll.saturating_sub(1);
             }
             KeyCode::Down => {
-                self.global_instructions_scroll = self.global_instructions_scroll
+                self.global_instructions_scroll = self
+                    .global_instructions_scroll
                     .saturating_add(1)
                     .min(self.global_instructions_max_scroll.get());
             }
             KeyCode::PageUp => {
-                self.global_instructions_scroll = self.global_instructions_scroll.saturating_sub(15);
+                self.global_instructions_scroll =
+                    self.global_instructions_scroll.saturating_sub(15);
             }
             KeyCode::PageDown => {
-                self.global_instructions_scroll = self.global_instructions_scroll
+                self.global_instructions_scroll = self
+                    .global_instructions_scroll
                     .saturating_add(15)
                     .min(self.global_instructions_max_scroll.get());
             }
@@ -515,15 +525,22 @@ impl App {
             QuestAction::PageUp => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.focus == QuestFocus::Instructions {
-                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_sub(15);
+                    qv.instructions_scroll_offset =
+                        qv.instructions_scroll_offset.saturating_sub(15);
                 } else {
-                    qv.scroll_offset = qv.scroll_offset.saturating_add(15).min(qv.max_terminal_scroll.get());
+                    qv.scroll_offset = qv
+                        .scroll_offset
+                        .saturating_add(15)
+                        .min(qv.max_terminal_scroll.get());
                 }
             }
             QuestAction::PageDown => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.focus == QuestFocus::Instructions {
-                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(15).min(qv.max_instructions_scroll.get());
+                    qv.instructions_scroll_offset = qv
+                        .instructions_scroll_offset
+                        .saturating_add(15)
+                        .min(qv.max_instructions_scroll.get());
                 } else {
                     qv.scroll_offset = qv.scroll_offset.saturating_sub(15);
                 }
@@ -533,13 +550,19 @@ impl App {
                 if qv.focus == QuestFocus::Instructions {
                     qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_sub(3);
                 } else {
-                    qv.scroll_offset = qv.scroll_offset.saturating_add(3).min(qv.max_terminal_scroll.get());
+                    qv.scroll_offset = qv
+                        .scroll_offset
+                        .saturating_add(3)
+                        .min(qv.max_terminal_scroll.get());
                 }
             }
             QuestAction::ScrollDown => {
                 let qv = self.quest_view.as_mut().unwrap();
                 if qv.focus == QuestFocus::Instructions {
-                    qv.instructions_scroll_offset = qv.instructions_scroll_offset.saturating_add(3).min(qv.max_instructions_scroll.get());
+                    qv.instructions_scroll_offset = qv
+                        .instructions_scroll_offset
+                        .saturating_add(3)
+                        .min(qv.max_instructions_scroll.get());
                 } else {
                     qv.scroll_offset = qv.scroll_offset.saturating_sub(3);
                 }
@@ -554,8 +577,9 @@ impl App {
             }
             QuestAction::HistoryUp => {
                 let qv = self.quest_view.as_mut().unwrap();
-                if qv.command_history.is_empty() { return; }
-                
+                if qv.command_history.is_empty() {
+                    return;
+                }
                 if qv.history_index.is_none() {
                     qv.pending_input = qv.input.clone();
                     qv.history_index = Some(qv.command_history.len().saturating_sub(1));
@@ -565,7 +589,7 @@ impl App {
                         qv.history_index = Some(idx - 1);
                     }
                 }
-                
+
                 if let Some(idx) = qv.history_index {
                     qv.input = qv.command_history[idx].clone();
                     qv.cursor = qv.input.len();
@@ -670,7 +694,9 @@ impl App {
                     let text = String::from_utf8_lossy(&out.stdout).to_string();
                     let qv = self.quest_view.as_mut().unwrap();
                     for c in text.chars() {
-                        if c == '\r' { continue; }
+                        if c == '\r' {
+                            continue;
+                        }
                         qv.input.insert(qv.cursor, c);
                         qv.cursor += c.len_utf8();
                     }
@@ -782,12 +808,15 @@ impl App {
                 } else if !stderr.is_empty() {
                     stderr
                 } else {
-                    "(no output — is the server running? try again in a moment)".to_string()
+                    "(no output is the server running? try again in a moment)".to_string()
                 }
             }
             Err(e) => format!("Failed to run command: {}", e),
         };
-        qv.history.push(TerminalEntry { command: cmd, output });
+        qv.history.push(TerminalEntry {
+            command: cmd,
+            output,
+        });
         qv.input.clear();
         qv.cursor = 0;
         qv.scroll_offset = 0;
@@ -820,7 +849,7 @@ impl App {
             return;
         }
 
-        // All checks passed — mark complete, stop server, clean DB.
+        // All checks passed mark complete, stop server, clean DB.
         self.completed.insert(quest_id);
         let _ = self.db.mark_completed(quest_id);
         self.cleanup_quest();
@@ -907,14 +936,27 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 _ => QuestAction::None,
             },
             QuestFocus::Terminal => match key.code {
-                KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::Paste,
-                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::CopyLastOutput,
-                KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordLeft,
-                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::CursorWordRight,
-                KeyCode::Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::BackspaceWord,
+                KeyCode::Char('v') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    QuestAction::Paste
+                }
+                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    QuestAction::CopyLastOutput
+                }
+                KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => {
+                    QuestAction::CursorWordLeft
+                }
+                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => {
+                    QuestAction::CursorWordRight
+                }
+                KeyCode::Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    QuestAction::BackspaceWord
+                }
                 KeyCode::Char(c) => QuestAction::Insert(c),
                 KeyCode::Backspace => {
-                    if key.modifiers.intersects(KeyModifiers::ALT | KeyModifiers::CONTROL) {
+                    if key
+                        .modifiers
+                        .intersects(KeyModifiers::ALT | KeyModifiers::CONTROL)
+                    {
                         QuestAction::BackspaceWord
                     } else {
                         QuestAction::Backspace
@@ -960,12 +1002,21 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 _ => QuestAction::None,
             },
             QuestFocus::Answer => match key.code {
-                KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::AnswerCursorWordLeft,
-                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => QuestAction::AnswerCursorWordRight,
-                KeyCode::Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => QuestAction::AnswerBackspaceWord,
+                KeyCode::Char('b') if key.modifiers.contains(KeyModifiers::ALT) => {
+                    QuestAction::AnswerCursorWordLeft
+                }
+                KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::ALT) => {
+                    QuestAction::AnswerCursorWordRight
+                }
+                KeyCode::Char('w') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    QuestAction::AnswerBackspaceWord
+                }
                 KeyCode::Char(c) => QuestAction::AnswerInsert(c),
                 KeyCode::Backspace => {
-                    if key.modifiers.intersects(KeyModifiers::ALT | KeyModifiers::CONTROL) {
+                    if key
+                        .modifiers
+                        .intersects(KeyModifiers::ALT | KeyModifiers::CONTROL)
+                    {
                         QuestAction::AnswerBackspaceWord
                     } else {
                         QuestAction::AnswerBackspace
@@ -1009,16 +1060,22 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
 }
 
 fn find_word_left(s: &str, cursor: usize) -> usize {
-    if cursor == 0 { return 0; }
+    if cursor == 0 {
+        return 0;
+    }
     let mut new_cursor = cursor;
     while new_cursor > 0 {
         let c = s[..new_cursor].chars().next_back().unwrap_or(' ');
-        if c.is_alphanumeric() { break; }
+        if c.is_alphanumeric() {
+            break;
+        }
         new_cursor -= c.len_utf8();
     }
     while new_cursor > 0 {
         let c = s[..new_cursor].chars().next_back().unwrap_or(' ');
-        if !c.is_alphanumeric() { break; }
+        if !c.is_alphanumeric() {
+            break;
+        }
         new_cursor -= c.len_utf8();
     }
     new_cursor
@@ -1026,16 +1083,22 @@ fn find_word_left(s: &str, cursor: usize) -> usize {
 
 fn find_word_right(s: &str, cursor: usize) -> usize {
     let len = s.len();
-    if cursor >= len { return len; }
+    if cursor >= len {
+        return len;
+    }
     let mut new_cursor = cursor;
     while new_cursor < len {
         let c = s[new_cursor..].chars().next().unwrap_or(' ');
-        if !c.is_alphanumeric() { break; }
+        if !c.is_alphanumeric() {
+            break;
+        }
         new_cursor += c.len_utf8();
     }
     while new_cursor < len {
         let c = s[new_cursor..].chars().next().unwrap_or(' ');
-        if c.is_alphanumeric() { break; }
+        if c.is_alphanumeric() {
+            break;
+        }
         new_cursor += c.len_utf8();
     }
     new_cursor.min(len)
