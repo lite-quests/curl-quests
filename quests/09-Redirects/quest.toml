@@ -12,18 +12,19 @@ To tell `curl` to automatically follow the trail, use the `-L` flag.
 
 Briefing:
 While working with the store’s systems, you stumble upon a legacy
-endpoint that has been migrated to a new secure system.
+endpoint that has been migrated. However, it seems the migration
+was done in stages, leaving behind a long trail of breadcrumbs!
 
 Base URL: http://localhost:8080
 
 Available endpoints:
   GET  /old-archive      — The legacy location
-  GET  /new-secure-vault — The new destination
 
 Your mission:
   1. Encounter the Detour: Try fetching `/old-archive`. Notice the
      301 status. Use `-i` to find the `Location` field in headers.
-  2. Follow the Trail: Use `-L` to tell `curl` to automatically
+  2. Follow the Trail: You *could* manually follow all 10 redirects,
+     but there's a better way! Use `-L` to tell `curl` to automatically
      follow all redirects until it hits the final 200 OK.
   3. Retrieve the Code: At the final destination, you'll find the
      'Archive Access Code'.
