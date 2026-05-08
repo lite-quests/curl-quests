@@ -25,7 +25,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
-    let box_w: u16 = 10;
+    let box_w: u16 = 32;
     let box_h: u16 = 3;
     let gap_x: u16 = 1;
     let gap_y: u16 = 1;
@@ -69,10 +69,12 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             (Color::Reset, Color::DarkGray, Color::DarkGray)
         };
 
+        let title = app.get_quest(quest_id).map(|q| q.title.as_str()).unwrap_or("");
+        let prefix = format!(" {}. {}", quest_id, title);
         let label = if is_done {
-            format!("Q{}✓", quest_id)
+            format!("{} ✓", prefix)
         } else {
-            format!("Q{}", quest_id)
+            prefix
         };
 
         let block = Block::bordered()
@@ -83,7 +85,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             Paragraph::new(label)
                 .block(block)
                 .bold()
-                .alignment(Alignment::Center),
+                .alignment(Alignment::Left),
             rect,
         );
     }

@@ -454,7 +454,7 @@ impl App {
     pub fn quest_grid_cols(&self) -> usize {
         let term_w = crossterm::terminal::size().map(|(w, _)| w).unwrap_or(80);
         let content_w = term_w.saturating_sub(22).saturating_sub(2); // sidebar + borders
-        let box_w = 10u16;
+        let box_w = 32u16;
         let gap = 1u16;
         ((content_w + gap) / (box_w + gap)).max(1) as usize
     }
