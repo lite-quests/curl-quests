@@ -2,7 +2,19 @@
 name = "curl-quests"
 version = "0.1.0"
 edition = "2024"
+authors = ["YadlaMani <yadlamaniymn2005@gmail.com>","Ananya54321 <ananyapappula2004@gmail.com>"]
+description = "An interactive terminal game for learning curl and HTTP APIs through hands-on quests"
+license = "Apache-2.0"
+repository = "https://github.com/lite-quests/curl-quests"
+homepage = "https://github.com/lite-quests/curl-quests"
+readme = "README.md"
+keywords = ["curl", "http", "terminal", "tui", "learning"]
+categories = ["command-line-utilities", "games"]
+exclude = ["data/"]
 
+[[bin]]
+name = "curl-quests"
+path = "src/main.rs"
 [dependencies]
 crossterm = "0.29.0"
 ratatui = "0.30.0"
