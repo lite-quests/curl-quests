@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Style},
+    layout::{Alignment, Constraint, Layout, Rect},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
 };
@@ -9,6 +9,10 @@ use ratatui::{
 use crate::app::{App, QuestFocus, QuestViewState, TestResult};
 
 pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
+    if matches!(qv.test_result, Some(TestResult::Pass)) {
+        render_victory_screen(frame, app, qv, area);
+        return;
+    }
     let quest = match app.get_quest(qv.quest_id) {
         Some(q) => q,
         None => return,
@@ -36,7 +40,8 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let cols = Layout::horizontal([
         Constraint::Percentage(qv.left_column_width),
         Constraint::Percentage(100_u16.saturating_sub(qv.left_column_width)),
-    ]).split(inner);
+    ])
+    .split(inner);
     let left_col = cols[0];
     let right_col = cols[1];
 
@@ -53,10 +58,8 @@ pub fn render(frame: &mut Frame, app: &App, qv: &QuestViewState, area: Rect) {
     let max_sol_height = inner.height.saturating_sub(5); // Ensure instructions get at least 5 lines
     sol_height = sol_height.min(max_sol_height).max(3);
 
-    let left_chunks = Layout::vertical([
-        Constraint::Fill(1),
-        Constraint::Length(sol_height),
-    ]).split(left_col);
+    let left_chunks =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(sol_height)]).split(left_col);
 
     render_instructions(frame, qv, &quest.instructions, left_chunks[0]);
     render_solutions(frame, qv, &quest.solutions, left_chunks[1]);
@@ -103,7 +106,11 @@ fn count_wrapped_lines(text: &str, width: u16) -> u16 {
 
 fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &str, area: Rect) {
     let focused = qv.focus == QuestFocus::Instructions;
-    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let border_color = if focused {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    };
     let title = if focused {
         " Instructions (↑/↓ scroll  ←/→ resize  Tab next) "
     } else {
@@ -117,11 +124,14 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
     let total_lines = count_wrapped_lines(&text, inner.width);
     let max_scroll = total_lines.saturating_sub(inner.height);
     qv.max_instructions_scroll.set(max_scroll as usize);
-    
+
     let scroll = qv.instructions_scroll_offset.min(max_scroll as usize) as u16;
 
     frame.render_widget(
-        Paragraph::new(text).block(block).wrap(Wrap { trim: false }).scroll((scroll, 0)),
+        Paragraph::new(text)
+            .block(block)
+            .wrap(Wrap { trim: false })
+            .scroll((scroll, 0)),
         area,
     );
 
@@ -129,7 +139,7 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
         let mut scrollbar_state = ScrollbarState::default()
             .content_length(max_scroll as usize)
             .position(scroll as usize);
-            
+
         frame.render_stateful_widget(
             Scrollbar::default()
                 .orientation(ScrollbarOrientation::VerticalRight)
@@ -143,9 +153,13 @@ fn render_instructions(frame: &mut Frame, qv: &QuestViewState, instructions: &st
 
 fn render_solutions(frame: &mut Frame, qv: &QuestViewState, solutions: &[String], area: Rect) {
     let focused = qv.focus == QuestFocus::Solutions;
-    let border_color = if focused { Color::Yellow } else { Color::DarkGray };
+    let border_color = if focused {
+        Color::Yellow
+    } else {
+        Color::DarkGray
+    };
     let title = if focused {
-        " Solutions (Enter to toggle, Up/Down to navigate) "
+        " Solutions (Enter to toggle, Arrows/Tab to navigate) "
     } else {
         " Solutions "
     };
@@ -155,31 +169,60 @@ fn render_solutions(frame: &mut Frame, qv: &QuestViewState, solutions: &[String]
         .border_style(Style::new().fg(border_color));
 
     let mut lines = Vec::new();
-    
+
     if qv.solutions_expanded {
-        for (i, sol) in solutions.iter().enumerate() {
-            let is_selected = focused && qv.selected_solution_idx == i + 1;
-            let marker = if qv.revealed_solutions.contains(&i) { "▼" } else { "▶" };
-            
-            let btn_style = if is_selected {
+        let mut tabs = vec![Span::raw(" ")];
+        let num_sols = solutions.len();
+
+        for (i, _) in solutions.iter().enumerate() {
+            let is_selected = focused && qv.selected_solution_idx == i;
+            let is_active = qv.revealed_solutions.contains(&i);
+
+            let style = if is_selected {
                 Style::new().bg(Color::White).fg(Color::Black).bold()
+            } else if is_active {
+                Style::new().fg(Color::Green).bold()
             } else {
                 Style::new().fg(Color::Cyan)
             };
-            
-            lines.push(Line::from(Span::styled(
-                format!(" {} Solution Part {} ", marker, i + 1),
-                btn_style,
-            )));
-            
+
+            tabs.push(Span::styled(format!(" [ {} ] ", i + 1), style));
+            tabs.push(Span::raw(" "));
+        }
+        
+        // Add an 'X' button to close
+        let close_selected = focused && qv.selected_solution_idx == num_sols;
+        let close_style = if close_selected {
+            Style::new().bg(Color::White).fg(Color::Black).bold()
+        } else {
+            Style::new().fg(Color::Red)
+        };
+        tabs.push(Span::styled(" [ X ] ", close_style));
+
+        lines.push(Line::from(tabs));
+        lines.push(Line::from(Span::styled(
+            "─".repeat(area.width.saturating_sub(2) as usize),
+            Style::new().fg(Color::DarkGray),
+        )));
+
+        // Show active solution content
+        let mut found = false;
+        for (i, sol) in solutions.iter().enumerate() {
             if qv.revealed_solutions.contains(&i) {
+                found = true;
                 for line in sol.lines() {
                     lines.push(Line::from(Span::styled(
-                        format!("   {}", line),
-                        Style::new().fg(Color::Gray)
+                        format!("  {}", line),
+                        Style::new().fg(Color::Gray),
                     )));
                 }
             }
+        }
+        if !found {
+            lines.push(Line::from(Span::styled(
+                "  Select a part to view the solution",
+                Style::new().fg(Color::DarkGray).italic(),
+            )));
         }
     } else {
         let is_selected = focused && qv.selected_solution_idx == 0;
@@ -188,10 +231,12 @@ fn render_solutions(frame: &mut Frame, qv: &QuestViewState, solutions: &[String]
         } else {
             Style::new().fg(Color::Cyan)
         };
-        lines.push(Line::from(Span::styled(" ▶ Show Solutions ", style)));
+        lines.push(Line::from(vec![
+            Span::raw("  "),
+            Span::styled("▶ Show Solutions", style),
+        ]));
     }
 
-    // A simple paragraph with wrapping
     frame.render_widget(
         Paragraph::new(lines).block(block).wrap(Wrap { trim: false }),
         area,
@@ -276,15 +321,18 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
 
     // Scroll so the bottom (live input) is always visible, accounting for user scroll_offset.
     let inner_w = inner.width.max(1) as usize;
-    let total_lines: u16 = lines.iter().map(|line| {
-        let len = line.width();
-        if len == 0 {
-            1
-        } else {
-            ((len.saturating_sub(1) / inner_w) + 1) as u16
-        }
-    }).sum();
-    
+    let total_lines: u16 = lines
+        .iter()
+        .map(|line| {
+            let len = line.width();
+            if len == 0 {
+                1
+            } else {
+                ((len.saturating_sub(1) / inner_w) + 1) as u16
+            }
+        })
+        .sum();
+
     let visible = inner.height;
     let max_scroll = total_lines.saturating_sub(visible);
     qv.max_terminal_scroll.set(max_scroll as usize);
@@ -303,7 +351,7 @@ fn render_terminal(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
         let mut scrollbar_state = ScrollbarState::default()
             .content_length(max_scroll as usize)
             .position(scroll as usize);
-            
+
         frame.render_stateful_widget(
             Scrollbar::default()
                 .orientation(ScrollbarOrientation::VerticalRight)
@@ -389,4 +437,148 @@ fn render_buttons(frame: &mut Frame, qv: &QuestViewState, area: Rect) {
 
     let block = Block::bordered().border_style(Style::new().fg(Color::DarkGray));
     frame.render_widget(Paragraph::new(line).block(block), area);
+}
+
+fn render_victory_screen(frame: &mut Frame, app: &App, _qv: &QuestViewState, area: Rect) {
+    let chunks = Layout::vertical([
+        Constraint::Fill(1),
+        Constraint::Length(15),
+        Constraint::Fill(1),
+    ])
+    .split(area);
+
+    let inner_chunks = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Length(60),
+        Constraint::Fill(1),
+    ])
+    .split(chunks[1]);
+
+    let victory_area = inner_chunks[1];
+
+    // Better Firework animation logic
+    let tick = app.tick;
+    let frame_idx = (tick / 2) % 10;
+
+    let firework = match frame_idx {
+        0 => vec![
+            "               ",
+            "       |       ",
+            "       |       ",
+            "               ",
+            "               ",
+        ],
+
+        1 => vec![
+            "               ",
+            "       ^       ",
+            "      /|\\      ",
+            "       |       ",
+            "               ",
+        ],
+
+        2 => vec![
+            "       .       ",
+            "      \\|/      ",
+            "    -- * --    ",
+            "      /|\\      ",
+            "       '       ",
+        ],
+
+        3 => vec![
+            "    \\  |  /    ",
+            "   . \\ | / .   ",
+            " ---  ***  --- ",
+            "   . / | \\ .   ",
+            "    /  |  \\    ",
+        ],
+
+        4 => vec![
+            " *   \\ | /   * ",
+            "   *  ***  *   ",
+            " --  *****  -- ",
+            "   *  ***  *   ",
+            " *   / | \\   * ",
+        ],
+
+        5 => vec![
+            " .   *   *   . ",
+            "   \\  | |  /   ",
+            " * --  *  -- * ",
+            "   /  | |  \\   ",
+            " .   *   *   . ",
+        ],
+
+        6 => vec![
+            "   .   .   .   ",
+            " .    * *    . ",
+            "      . .      ",
+            " .    * *    . ",
+            "   .   .   .   ",
+        ],
+
+        7 => vec![
+            "   .       .   ",
+            "      . .      ",
+            "               ",
+            "      . .      ",
+            "   .       .   ",
+        ],
+
+        _ => vec![
+            "               ",
+            "               ",
+            "               ",
+            "               ",
+            "               ",
+        ],
+    };
+
+    let block = Block::bordered()
+        .border_style(Style::new().fg(Color::Green))
+        .style(Style::new().bg(Color::Reset));
+
+    let mut text = vec![Line::from("")];
+
+    // Add animated fireworks at the top with varying colors
+    let fw_color = match frame_idx {
+        0..=2 => Color::White,
+        3..=5 => Color::Yellow,
+        6..=7 => Color::DarkGray,
+        _ => Color::Reset,
+    };
+
+    for line in firework {
+        text.push(
+            Line::from(Span::styled(line, Style::new().fg(fw_color).bold()))
+                .alignment(Alignment::Center),
+        );
+    }
+
+    text.extend(vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "COMPLETED QUEST",
+            Style::new().fg(Color::Green).bold(),
+        ))
+        .alignment(Alignment::Center),
+        Line::from(""),
+        Line::from(vec![Span::raw(
+            "Congratulations! You have completed this quest.",
+        )])
+        .alignment(Alignment::Center),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            " [ Go Back ] ",
+            Style::new().bg(Color::Yellow).fg(Color::Black).bold(),
+        )])
+        .alignment(Alignment::Center),
+        Line::from(vec![Span::styled(
+            "(press enter to go back to quests page)",
+            Style::new().fg(Color::DarkGray),
+        )])
+        .alignment(Alignment::Center),
+    ]);
+
+    frame.render_widget(Paragraph::new(text).block(block), victory_area);
 }

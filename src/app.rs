@@ -157,6 +157,7 @@ pub struct App {
     pub quests: Vec<quests::Quest>,
     pub server_process: Option<Child>,
     pub exit: bool,
+    pub tick: u64,
 }
 
 impl Drop for App {
@@ -184,6 +185,7 @@ impl App {
             quests,
             server_process: None,
             exit: false,
+            tick: 0,
         })
     }
 
@@ -261,28 +263,27 @@ impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame| crate::ui::draw(frame, self))?;
-            self.handle_events()?;
-            while crossterm::event::poll(std::time::Duration::from_millis(0))? {
+            if crossterm::event::poll(std::time::Duration::from_millis(50))? {
                 self.handle_events()?;
-                if self.exit {
-                    break;
-                }
             }
+            self.tick = self.tick.wrapping_add(1);
         }
         Ok(())
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        match event::read()? {
-            Event::Key(key) => {
-                if key.kind == KeyEventKind::Press {
-                    self.handle_key(key);
+        if crossterm::event::poll(std::time::Duration::from_millis(0))? {
+            match event::read()? {
+                Event::Key(key) => {
+                    if key.kind == KeyEventKind::Press {
+                        self.handle_key(key);
+                    }
                 }
+                Event::Mouse(mouse) => {
+                    self.handle_mouse(mouse);
+                }
+                _ => {}
             }
-            Event::Mouse(mouse) => {
-                self.handle_mouse(mouse);
-            }
-            _ => {}
         }
         Ok(())
     }
@@ -464,6 +465,18 @@ impl App {
     // -----------------------------------------------------------------------
 
     fn handle_quest_key(&mut self, key: KeyEvent) {
+        let is_passed = matches!(self.quest_view.as_ref().unwrap().test_result, Some(TestResult::Pass));
+        
+        if is_passed {
+            match key.code {
+                KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q') => {
+                    self.apply_quest_action(QuestAction::Back);
+                }
+                _ => {}
+            }
+            return;
+        }
+
         let action = {
             let qv = self.quest_view.as_ref().unwrap();
             resolve_quest_action(qv, key)
@@ -733,17 +746,19 @@ impl App {
                 let qv = self.quest_view.as_mut().unwrap();
                 if !qv.solutions_expanded {
                     qv.solutions_expanded = true;
+                    qv.selected_solution_idx = 0;
                 } else {
                     let idx = qv.selected_solution_idx;
                     let num_sols = self.quests.iter().find(|q| q.id == qv.quest_id).unwrap().solutions.len();
-                    if idx == 0 {
+                    if idx == num_sols {
                         qv.solutions_expanded = false;
                         qv.revealed_solutions.clear();
-                    } else if idx <= num_sols {
-                        let sol_idx = idx - 1;
+                    } else if idx < num_sols {
+                        let sol_idx = idx;
                         if qv.revealed_solutions.contains(&sol_idx) {
                             qv.revealed_solutions.remove(&sol_idx);
                         } else {
+                            qv.revealed_solutions.clear();
                             qv.revealed_solutions.insert(sol_idx);
                         }
                     }
@@ -928,8 +943,8 @@ fn resolve_quest_action(qv: &QuestViewState, key: KeyEvent) -> QuestAction {
                 _ => QuestAction::None,
             },
             QuestFocus::Solutions => match key.code {
-                KeyCode::Up => QuestAction::SolutionUp,
-                KeyCode::Down => QuestAction::SolutionDown,
+                KeyCode::Up | KeyCode::Left => QuestAction::SolutionUp,
+                KeyCode::Down | KeyCode::Right => QuestAction::SolutionDown,
                 KeyCode::Tab => QuestAction::FocusNext,
                 KeyCode::BackTab => QuestAction::FocusPrev,
                 KeyCode::Enter => QuestAction::ToggleSolution,

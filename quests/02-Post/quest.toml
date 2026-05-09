@@ -39,9 +39,9 @@ Your mission:
 
 """
 solutions = [
-    """curl http://localhost:8080/inventory
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Butter"}' http://localhost:8080/inventory
-curl -X POST -H "Content-Type: application/json" -d '{"name":"Oranges"}' http://localhost:8080/inventory""",
+    "curl -s http://localhost:8080/inventory",
+    "curl -s -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Butter\"}' http://localhost:8080/inventory",
+    "curl -s -X POST -H \"Content-Type: application/json\" -d '{\"name\":\"Oranges\"}' http://localhost:8080/inventory",
 ]
 
 [setup]
