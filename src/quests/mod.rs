@@ -1,7 +1,10 @@
+use include_dir::{include_dir, Dir};
 use rusqlite::Connection;
 use rusqlite::types::Value;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
+
+static EMBEDDED_QUESTS: Dir = include_dir!("$CARGO_MANIFEST_DIR/quests");
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -142,13 +145,29 @@ struct InputCheckToml {
 // Loader
 // ---------------------------------------------------------------------------
 
-/// Load all quests from `quests_dir`. Each sub-folder must contain a
-/// `quest.toml`. Folders that cannot be parsed are silently skipped.
-/// The returned vec is sorted by quest id.
+/// Load all quests.
+/// Priority:
+/// 1. Local `./quests` directory (for development)
+/// 2. Embedded quests extracted to a temporary directory (for cargo install)
 pub fn load_quests(quests_dir: &Path) -> Vec<Quest> {
-    let mut quests = Vec::new();
+    let mut actual_dir = quests_dir.to_path_buf();
 
-    let entries = match std::fs::read_dir(quests_dir) {
+    // If the requested directory doesn't exist, we use the embedded ones.
+    if !actual_dir.exists() {
+        let temp_dir = std::env::temp_dir().join("curl-quests-assets");
+        let _ = std::fs::create_dir_all(&temp_dir);
+        
+        // Extract embedded quests to temp dir if not already there or to ensure they are up to date.
+        // For simplicity, we just extract them every time or check a version file.
+        // Here we'll just extract them.
+        for entry in EMBEDDED_QUESTS.entries() {
+            extract_dir_entry(entry, &temp_dir);
+        }
+        actual_dir = temp_dir;
+    }
+
+    let mut quests = Vec::new();
+    let entries = match std::fs::read_dir(&actual_dir) {
         Ok(e) => e,
         Err(_) => return quests,
     };
@@ -161,7 +180,12 @@ pub fn load_quests(quests_dir: &Path) -> Vec<Quest> {
 
     for entry in dirs {
         let folder = entry.path();
-        let content = match std::fs::read_to_string(folder.join("quest.toml")) {
+        let config_path = folder.join("quest.toml");
+        if !config_path.exists() {
+            continue;
+        }
+        
+        let content = match std::fs::read_to_string(&config_path) {
             Ok(s) => s,
             Err(_) => continue,
         };
@@ -208,4 +232,34 @@ pub fn load_quests(quests_dir: &Path) -> Vec<Quest> {
 
     quests.sort_by_key(|q| q.id);
     quests
+}
+
+fn extract_dir_entry(entry: &include_dir::DirEntry, base_path: &Path) {
+    match entry {
+        include_dir::DirEntry::Dir(d) => {
+            let path = base_path.join(d.path());
+            let _ = std::fs::create_dir_all(&path);
+            for e in d.entries() {
+                extract_dir_entry(e, base_path);
+            }
+        }
+        include_dir::DirEntry::File(f) => {
+            let path = base_path.join(f.path());
+            if let Some(parent) = path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(&path, f.contents());
+            
+            // Make sure shell scripts are executable on Unix systems.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if path.extension().map_or(false, |ext| ext == "sh") {
+                    let mut perms = std::fs::metadata(&path).unwrap().permissions();
+                    perms.set_mode(0o755);
+                    let _ = std::fs::set_permissions(&path, perms);
+                }
+            }
+        }
+    }
 }
