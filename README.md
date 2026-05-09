@@ -106,6 +106,7 @@ Focus moves through: **Instructions → Solutions → Terminal → Answer → Su
 
 ### Tips
 
+- **Maximize your terminal**: For the best experience, run your terminal in **full screen**. This ensures all quest content, animations, and the dual-column layout are displayed correctly without clipping.
 - **The server is already running** when you open a quest you don't need to start anything manually.
 - **Read the instructions fully** before running any command. The quest often tells you the exact endpoint and method to use.
 - **If a command produces no output**, the server may still be starting. Wait a second and try again.
