@@ -1,11 +1,23 @@
 [package]
 name = "curl-quests"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2024"
+authors = ["YadlaMani <yadlamaniymn2005@gmail.com>","Ananya54321 <ananyapappula2004@gmail.com>"]
+description = "An interactive terminal game for learning curl and HTTP APIs through hands-on quests"
+license = "Apache-2.0"
+repository = "https://github.com/lite-quests/curl-quests"
+homepage = "https://github.com/lite-quests/curl-quests"
+readme = "README.md"
+keywords = ["curl", "http", "terminal", "tui", "learning"]
+categories = ["command-line-utilities", "games"]
 
+[[bin]]
+name = "curl-quests"
+path = "src/main.rs"
 [dependencies]
 crossterm = "0.29.0"
-ratatui = "0.30.0"
+ratatui = "0.30.0" 
 rusqlite = { version = "0.31", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
+include_dir = "0.7"
