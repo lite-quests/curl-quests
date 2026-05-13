@@ -2,6 +2,8 @@
 
 [![Crates.io](https://img.shields.io/crates/v/curl-quests.svg)](https://crates.io/crates/curl-quests) [![Downloads](https://img.shields.io/crates/d/curl-quests.svg)](https://crates.io/crates/curl-quests)
 
+<img width="14032" height="9922" alt="Group 21" src="https://github.com/user-attachments/assets/fd4f833b-1098-4539-bb31-b1481c3f122c" />
+
 <p align="center"><strong>⭐ If these quests helped you learn curl and HTTP, please consider starring the repo.</strong></p>
 
 An interactive terminal game for learning `curl` and HTTP APIs through hands-on quests. Each quest spins up a real local server, gives you instructions, and verifies your work directly against the database no guessing, just doing.
