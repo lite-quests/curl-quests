@@ -9,7 +9,12 @@ use ratatui::{
 use crate::app::{App, SIDEBAR_ITEMS};
 
 pub fn render(frame: &mut Frame, app: &App, area: Rect) {
-    let chunks = Layout::horizontal([Constraint::Fill(1), Constraint::Length(10)]).split(area);
+    let chunks = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Length(10),
+        Constraint::Length(30),
+    ])
+    .split(area);
 
     let mut tabs = Tabs::new(SIDEBAR_ITEMS.iter().copied())
         .block(Block::bordered().title(" curl-quests ").border_style(Style::new().fg(Color::Cyan)));
@@ -37,6 +42,18 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             .style(btn_style)
             .block(Block::bordered().border_style(border_style)),
         chunks[1],
+    );
+
+    let text = ratatui::text::Line::from(vec![
+        ratatui::text::Span::raw("Powered by "),
+        ratatui::text::Span::styled("⚡ Lite Quests", Style::new().fg(Color::Yellow).bold()),
+    ]);
+
+    frame.render_widget(
+        Paragraph::new(text)
+            .alignment(Alignment::Center)
+            .block(Block::bordered().border_style(Style::new().fg(Color::DarkGray))),
+        chunks[2],
     );
 }
 

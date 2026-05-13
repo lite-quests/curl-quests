@@ -21,3 +21,5 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 include_dir = "0.7"
+image = "0.25.10"
+ratatui-image = { version = "11.0.2", default-features = false, features = ["crossterm"] }
